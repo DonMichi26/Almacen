@@ -35,12 +35,21 @@ public class DatabaseManager {
             if (!columnExists(conn, "products", "category_id")) {
                 stmt.execute("ALTER TABLE products ADD COLUMN category_id INTEGER DEFAULT 1");
                 System.out.println("category_id column added to products table.");
+            } else {
+                // Update existing products to have a valid category_id if they have NULL
+                stmt.execute("UPDATE products SET category_id = 1 WHERE category_id IS NULL OR category_id = ''");
             }
 
             // Check if invoice_type column exists in invoices table, if not add it
             if (!columnExists(conn, "invoices", "invoice_type")) {
                 stmt.execute("ALTER TABLE invoices ADD COLUMN invoice_type TEXT NOT NULL DEFAULT 'SALE'");
                 System.out.println("invoice_type column added to invoices table.");
+            }
+
+            // Check if description column exists in invoices table, if not add it
+            if (!columnExists(conn, "invoices", "description")) {
+                stmt.execute("ALTER TABLE invoices ADD COLUMN description TEXT");
+                System.out.println("description column added to invoices table.");
             }
 
             // Create products table if it doesn't exist (for fresh installations)
