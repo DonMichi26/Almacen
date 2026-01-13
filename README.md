@@ -178,4 +178,4 @@ Este proyecto es de código abierto y está disponible bajo la [Licencia MIT](LI
 
 ---
 
-Desarrollado con ❤️ por [Tu Nombre]
+Desarrollado con ❤️ por Luis Magro
