@@ -6,13 +6,25 @@ public class Product {
     private String description;
     private double price;
     private int stock;
+    private int categoryId;
 
+    public Product(int id, String name, String description, double price, int stock, int categoryId) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.stock = stock;
+        this.categoryId = categoryId;
+    }
+
+    // Constructor without category for backward compatibility
     public Product(int id, String name, String description, double price, int stock) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.price = price;
         this.stock = stock;
+        this.categoryId = 1; // Default to General category
     }
 
     // Getters and Setters
@@ -56,14 +68,23 @@ public class Product {
         this.stock = stock;
     }
 
+    public int getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(int categoryId) {
+        this.categoryId = categoryId;
+    }
+
     @Override
     public String toString() {
-        return "Product{"
-               + "id=" + id + ", "
-               + "name='" + name + "'" + ", "
-               + "description='" + description + "'" + ", "
-               + "price=" + price + ", "
-               + "stock=" + stock + 
+        return "Product{" +
+               "id=" + id + ", " +
+               "name='" + name + "', " +
+               "description='" + description + "', " +
+               "price=" + price + ", " +
+               "stock=" + stock + ", " +
+               "categoryId=" + categoryId +
                '}';
     }
 }

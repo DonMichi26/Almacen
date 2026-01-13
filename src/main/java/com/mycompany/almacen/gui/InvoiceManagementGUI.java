@@ -39,19 +39,17 @@ public class InvoiceManagementGUI extends JPanel {
     private JLabel totalAmountLabel;
     private List<InvoiceItem> currentInvoiceItems = new ArrayList<>();
     private double currentTotalAmount = 0.0;
-    
+
     // --- Service Components ---
     private JTextField serviceCustomerNameField;
     private JTextArea serviceDescriptionArea;
     private JTextField servicePriceField;
 
     // --- UI Style Constants ---
-    private static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
+    private static final Color BACKGROUND_COLOR = new Color(250, 250, 250);
     private static final Color PRIMARY_COLOR = new Color(70, 130, 180);
     private static final Color TEXT_COLOR = new Color(50, 50, 50);
-    private static final Color TABLE_HEADER_COLOR = new Color(220, 220, 220);
-    private static final Color BUTTON_COLOR = PRIMARY_COLOR;
-    private static final Color BUTTON_TEXT_COLOR = Color.WHITE;
+    private static final Color TABLE_HEADER_COLOR = new Color(240, 240, 240);
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
     public InvoiceManagementGUI() {
@@ -67,20 +65,31 @@ public class InvoiceManagementGUI extends JPanel {
         setBackground(BACKGROUND_COLOR);
         setLayout(new BorderLayout());
 
-        JTabbedPane mainTabs = new JTabbedPane();
-        mainTabs.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        mainTabs.addTab("Crear Recibo", createCreationPanel());
-        mainTabs.addTab("Ver Recibos Existentes", createExistingInvoicesPanel());
+        // Create main content panel instead of tabs
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(BACKGROUND_COLOR);
 
-        add(mainTabs);
+        // Create top panel with creation options
+        JPanel topPanel = createCreationPanel();
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+
+        // Create bottom panel for existing invoices
+        JPanel bottomPanel = createExistingInvoicesPanel();
+        mainPanel.add(bottomPanel, BorderLayout.CENTER);
+
+        add(mainPanel);
     }
-    
+
     private JPanel createCreationPanel() {
-        JPanel creationPanel = new JPanel(new BorderLayout());
+        JPanel creationPanel = new JPanel(new BorderLayout(10, 10));
+        creationPanel.setBorder(BorderFactory.createTitledBorder("Crear Nuevo Recibo"));
+        creationPanel.setBackground(BACKGROUND_COLOR);
+
         JTabbedPane creationTabs = new JTabbedPane();
         creationTabs.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         creationTabs.addTab("Venta de Productos", createProductSalePanel());
         creationTabs.addTab("Servicio de Mantenimiento", createServicePanel());
+
         creationPanel.add(creationTabs, BorderLayout.CENTER);
         return creationPanel;
     }
@@ -104,13 +113,13 @@ public class InvoiceManagementGUI extends JPanel {
         productComboBox = new JComboBox<>();
         productComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         gbc.gridx = 1; gbc.gridy = 1; formPanel.add(productComboBox, gbc);
-        
+
         gbc.gridx = 0; gbc.gridy = 2; formPanel.add(createLabel("Cantidad:"), gbc);
         quantityField = createTextField();
         quantityField.setText("1");
         gbc.gridx = 1; gbc.gridy = 2; formPanel.add(quantityField, gbc);
-        
-        JButton addProductButton = createButton("Añadir Producto");
+
+        ModernButton addProductButton = new ModernButton("Añadir Producto");
         gbc.gridx = 1; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE; formPanel.add(addProductButton, gbc);
         salePanel.add(formPanel, BorderLayout.NORTH);
 
@@ -121,12 +130,12 @@ public class InvoiceManagementGUI extends JPanel {
         currentItemsTableModel = new DefaultTableModel(itemColumnNames, 0);
         currentItemsTable = createStyledTable(currentItemsTableModel);
         currentItemsPanel.add(new JScrollPane(currentItemsTable), BorderLayout.CENTER);
-        
+
         JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         southPanel.setBackground(BACKGROUND_COLOR);
         totalAmountLabel = createLabel("Total: S/ 0.00");
         totalAmountLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        JButton createSaleButton = createButton("Crear Recibo de Venta");
+        ModernButton createSaleButton = new ModernButton("Crear Recibo de Venta");
         southPanel.add(totalAmountLabel);
         southPanel.add(createSaleButton);
         currentItemsPanel.add(southPanel, BorderLayout.SOUTH);
@@ -162,17 +171,17 @@ public class InvoiceManagementGUI extends JPanel {
         servicePriceField = createTextField();
         gbc.gridx = 1; gbc.gridy = 2; servicePanel.add(servicePriceField, gbc);
 
-        JButton createServiceButton = createButton("Crear Recibo de Servicio");
+        ModernButton createServiceButton = new ModernButton("Crear Recibo de Servicio");
         gbc.gridx = 1; gbc.gridy = 3; gbc.fill = GridBagConstraints.NONE; gbc.anchor = GridBagConstraints.EAST; servicePanel.add(createServiceButton, gbc);
 
         createServiceButton.addActionListener(e -> createServiceInvoice());
 
         return servicePanel;
     }
-    
+
     private JPanel createExistingInvoicesPanel() {
         JPanel existingInvoicesPanel = new JPanel(new BorderLayout(10, 10));
-        existingInvoicesPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        existingInvoicesPanel.setBorder(BorderFactory.createTitledBorder("Recibos Existentes"));
         existingInvoicesPanel.setBackground(BACKGROUND_COLOR);
 
         String[] invoiceColumnNames = {"ID", "Fecha", "Cliente", "Total", "Tipo"};
@@ -180,20 +189,20 @@ public class InvoiceManagementGUI extends JPanel {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         invoiceTable = createStyledTable(invoiceTableModel);
-        
+
         existingInvoicesPanel.add(new JScrollPane(invoiceTable), BorderLayout.CENTER);
 
         JPanel invoiceActionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         invoiceActionsPanel.setBackground(BACKGROUND_COLOR);
-        JButton generatePdfButton = createButton("Generar PDF");
+        ModernButton generatePdfButton = new ModernButton("Generar PDF");
         invoiceActionsPanel.add(generatePdfButton);
         existingInvoicesPanel.add(invoiceActionsPanel, BorderLayout.SOUTH);
-        
+
         generatePdfButton.addActionListener(e -> generateSelectedInvoicePdf());
 
         return existingInvoicesPanel;
     }
-    
+
     private void createSaleInvoice() {
         String customerName = saleCustomerNameField.getText().trim();
         if (customerName.isEmpty() || currentInvoiceItems.isEmpty()) {
@@ -249,7 +258,7 @@ public class InvoiceManagementGUI extends JPanel {
             e.printStackTrace();
         }
     }
-    
+
     private void generateSelectedInvoicePdf() {
         int selectedRow = invoiceTable.getSelectedRow();
         if (selectedRow == -1) {
@@ -314,7 +323,7 @@ public class InvoiceManagementGUI extends JPanel {
         }
         updateCurrentItemsTable();
     }
-    
+
     private void updateCurrentItemsTable() {
         currentItemsTableModel.setRowCount(0);
         currentTotalAmount = 0.0;
@@ -330,7 +339,7 @@ public class InvoiceManagementGUI extends JPanel {
         }
         totalAmountLabel.setText(String.format("Total: S/ %.2f", currentTotalAmount));
     }
-    
+
     private void loadInvoices() {
         invoiceTableModel.setRowCount(0);
         try {
@@ -370,7 +379,7 @@ public class InvoiceManagementGUI extends JPanel {
             showError("Error al cargar productos: " + e.getMessage());
         }
     }
-    
+
     private void clearSaleFields() {
         saleCustomerNameField.setText("");
         quantityField.setText("1");
@@ -378,7 +387,7 @@ public class InvoiceManagementGUI extends JPanel {
         currentInvoiceItems.clear();
         updateCurrentItemsTable();
     }
-    
+
     private void clearServiceFields() {
         serviceCustomerNameField.setText("");
         serviceDescriptionArea.setText("");
@@ -402,16 +411,6 @@ public class InvoiceManagementGUI extends JPanel {
         return textField;
     }
 
-    private JButton createButton(String text) {
-        JButton button = new JButton(text);
-        button.setBackground(BUTTON_COLOR);
-        button.setForeground(BUTTON_TEXT_COLOR);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        button.setFocusPainted(false);
-        button.setBorder(new EmptyBorder(10, 20, 10, 20));
-        return button;
-    }
-    
     private JTable createStyledTable(DefaultTableModel model) {
         JTable table = new JTable(model);
         table.setFillsViewportHeight(true);
@@ -425,15 +424,15 @@ public class InvoiceManagementGUI extends JPanel {
         header.setFont(new Font("Segoe UI", Font.BOLD, 12));
         return table;
     }
-    
+
     private void showMessage(String message) {
         JOptionPane.showMessageDialog(this, message, "Información", JOptionPane.INFORMATION_MESSAGE);
     }
-    
+
     private void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
-    
+
     private void showWarning(String message) {
         JOptionPane.showMessageDialog(this, message, "Advertencia", JOptionPane.WARNING_MESSAGE);
     }
