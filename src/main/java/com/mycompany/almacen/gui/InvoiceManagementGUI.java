@@ -6,7 +6,10 @@ import com.mycompany.almacen.dao.ProductDAO;
 import com.mycompany.almacen.model.Invoice;
 import com.mycompany.almacen.model.InvoiceItem;
 import com.mycompany.almacen.model.Product;
+import com.mycompany.almacen.service.InvoiceService;
+import com.mycompany.almacen.util.FileUtils;
 import com.mycompany.almacen.util.PdfGenerator;
+import com.mycompany.almacen.util.ValidationUtils;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -22,8 +25,7 @@ import java.util.List;
 
 public class InvoiceManagementGUI extends JPanel {
 
-    private InvoiceDAO invoiceDAO;
-    private InvoiceItemDAO invoiceItemDAO;
+    private InvoiceService invoiceService;
     private ProductDAO productDAO;
 
     // --- Common Components ---
@@ -53,8 +55,7 @@ public class InvoiceManagementGUI extends JPanel {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
     public InvoiceManagementGUI() {
-        invoiceDAO = new InvoiceDAO();
-        invoiceItemDAO = new InvoiceItemDAO();
+        invoiceService = new InvoiceService();
         productDAO = new ProductDAO();
         initComponents();
         loadProductsIntoComboBox();
@@ -210,27 +211,32 @@ public class InvoiceManagementGUI extends JPanel {
             return;
         }
         try {
+            // Actualizar stock de productos
             for (InvoiceItem item : currentInvoiceItems) {
-                productDAO.updateProductStock(item.getProductId(), -item.getQuantity());
+                invoiceService.updateProductStock(item.getProductId(), -item.getQuantity());
             }
+
             Invoice newInvoice = new Invoice(new Date(), customerName, currentTotalAmount);
-            int invoiceId = invoiceDAO.addInvoice(newInvoice);
+            int invoiceId = invoiceService.addInvoice(newInvoice);
+
             for (InvoiceItem item : currentInvoiceItems) {
                 item.setInvoiceId(invoiceId);
-                invoiceItemDAO.addInvoiceItem(item);
+                invoiceService.addInvoiceItem(item);
             }
+
             showMessage("Recibo de venta creado con ID: " + invoiceId);
             clearSaleFields();
             loadInvoices();
             loadProductsIntoComboBox();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             showError("Error al guardar el recibo de venta: " + e.getMessage());
             e.printStackTrace();
             try {
+                // Revertir cambios en stock
                 for (InvoiceItem item : currentInvoiceItems) {
-                    productDAO.updateProductStock(item.getProductId(), item.getQuantity());
+                    invoiceService.updateProductStock(item.getProductId(), item.getQuantity());
                 }
-            } catch (SQLException revertEx) {
+            } catch (Exception revertEx) {
                 showError("¡ERROR CRÍTICO! No se pudo revertir el stock: " + revertEx.getMessage());
             }
         }
@@ -246,14 +252,14 @@ public class InvoiceManagementGUI extends JPanel {
         try {
             double price = Double.parseDouble(servicePriceField.getText().trim());
             Invoice newInvoice = new Invoice(new Date(), customerName, price, description);
-            int invoiceId = invoiceDAO.addInvoice(newInvoice);
+            int invoiceId = invoiceService.addInvoice(newInvoice);
             showMessage("Recibo de servicio creado con ID: " + invoiceId);
             clearServiceFields();
             loadInvoices();
         } catch (NumberFormatException e) {
             showError("Precio inválido. Ingrese un valor numérico.");
             e.printStackTrace();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             showError("Error al guardar el recibo de servicio: " + e.getMessage());
             e.printStackTrace();
         }
@@ -268,26 +274,55 @@ public class InvoiceManagementGUI extends JPanel {
 
         try {
             int invoiceId = (int) invoiceTableModel.getValueAt(selectedRow, 0);
-            Invoice invoice = invoiceDAO.getInvoiceById(invoiceId);
+            Invoice invoice = invoiceService.getInvoiceById(invoiceId);
 
             if (invoice != null) {
-                String fileName = "Recibo_" + invoice.getId() + "_" + invoice.getCustomerName().replaceAll("\\s+", "_") + ".pdf";
-                if (invoice.getInvoiceType() == Invoice.InvoiceType.SALE) {
-                    List<InvoiceItem> items = invoiceItemDAO.getInvoiceItemsByInvoiceId(invoiceId);
-                    if (items == null || items.isEmpty()) {
-                        showError("Este recibo de venta no tiene productos asociados.");
-                        return;
+                // Sanitizar el nombre del cliente para evitar caracteres peligrosos en el nombre del archivo
+                String sanitizedCustomerName = ValidationUtils.sanitizeFileName(invoice.getCustomerName());
+                String defaultFileName = "Recibo_" + invoice.getId() + "_" + sanitizedCustomerName + ".pdf";
+
+                // Permitir al usuario elegir la ubicación y nombre del archivo
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setDialogTitle("Guardar recibo como PDF");
+                fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                fileChooser.setAcceptAllFileFilterUsed(false);
+                fileChooser.addChoosableFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Archivos PDF", "pdf"));
+
+                // Establecer directorio predeterminado como la carpeta de documentos del usuario
+                fileChooser.setCurrentDirectory(new java.io.File(FileUtils.getUserDocumentsFolder()));
+
+                // Establecer nombre de archivo predeterminado
+                fileChooser.setSelectedFile(new java.io.File(defaultFileName));
+
+                int result = fileChooser.showSaveDialog(this);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+
+                    // Asegurar que el archivo tenga extensión .pdf
+                    if (!filePath.toLowerCase().endsWith(".pdf")) {
+                        filePath += ".pdf";
                     }
-                    PdfGenerator.generateInvoicePdf(invoice, items, fileName);
-                } else { // SERVICE
-                    PdfGenerator.generateServiceInvoicePdf(invoice, fileName);
+
+                    if (invoice.getInvoiceType() == Invoice.InvoiceType.SALE) {
+                        List<InvoiceItem> items = invoiceService.getInvoiceItemsByInvoiceId(invoiceId);
+                        if (items == null || items.isEmpty()) {
+                            showError("Este recibo de venta no tiene productos asociados.");
+                            return;
+                        }
+                        PdfGenerator.generateInvoicePdf(invoice, items, filePath);
+                    } else { // SERVICE
+                        PdfGenerator.generateServiceInvoicePdf(invoice, filePath);
+                    }
+                    showMessage("PDF generado exitosamente: " + filePath);
                 }
-                showMessage("PDF generado exitosamente: " + fileName);
             } else {
                 showError("No se pudo encontrar el recibo.");
             }
-        } catch (SQLException | FileNotFoundException e) {
-            showError("Error al generar el PDF: " + e.getMessage());
+        } catch (FileNotFoundException e) {
+            showError("No se pudo crear el archivo PDF: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            showError("Error inesperado al generar el PDF: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -343,7 +378,7 @@ public class InvoiceManagementGUI extends JPanel {
     private void loadInvoices() {
         invoiceTableModel.setRowCount(0);
         try {
-            List<Invoice> invoices = invoiceDAO.getAllInvoices();
+            List<Invoice> invoices = invoiceService.getAllInvoices();
             for (Invoice invoice : invoices) {
                 invoiceTableModel.addRow(new Object[]{
                     invoice.getId(),
@@ -353,7 +388,7 @@ public class InvoiceManagementGUI extends JPanel {
                     invoice.getInvoiceType()
                 });
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             showError("Error al cargar los recibos: " + e.getMessage());
         }
     }

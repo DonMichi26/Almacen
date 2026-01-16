@@ -8,6 +8,8 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.property.HorizontalAlignment;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
+import com.mycompany.almacen.exception.SecurityException;
+import com.mycompany.almacen.exception.ValidationException;
 import com.mycompany.almacen.model.Invoice;
 import com.mycompany.almacen.model.InvoiceItem;
 
@@ -20,8 +22,21 @@ public class PdfGenerator {
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
-    public static void generateInvoicePdf(Invoice invoice, List<InvoiceItem> items, String dest) throws FileNotFoundException {
-        PdfWriter writer = new PdfWriter(dest);
+    public static void generateInvoicePdf(Invoice invoice, List<InvoiceItem> items, String dest) throws FileNotFoundException, SecurityException, ValidationException {
+        // Validar la ruta del archivo para evitar accesos no deseados
+        if (!ValidationUtils.isValidPath(dest, System.getProperty("user.home"))) {
+            throw new SecurityException("Ruta de archivo no permitida: " + dest);
+        }
+
+        // Validar extensión del archivo
+        if (!ValidationUtils.hasValidExtension(dest, "pdf")) {
+            throw new ValidationException("Extensión de archivo no válida. Solo se permiten archivos PDF.");
+        }
+
+        // Sanitizar el nombre del archivo
+        String sanitizedDest = ValidationUtils.sanitizeFileName(dest);
+
+        PdfWriter writer = new PdfWriter(sanitizedDest);
         PdfDocument pdf = new PdfDocument(writer);
         Document document = new Document(pdf);
 
@@ -68,11 +83,24 @@ public class PdfGenerator {
                 .setBold());
 
         document.close();
-        System.out.println("Invoice PDF generated: " + dest);
+        System.out.println("Invoice PDF generated: " + sanitizedDest);
     }
-    
-    public static void generateServiceInvoicePdf(Invoice invoice, String dest) throws FileNotFoundException {
-        PdfWriter writer = new PdfWriter(dest);
+
+    public static void generateServiceInvoicePdf(Invoice invoice, String dest) throws FileNotFoundException, SecurityException, ValidationException {
+        // Validar la ruta del archivo para evitar accesos no deseados
+        if (!ValidationUtils.isValidPath(dest, System.getProperty("user.home"))) {
+            throw new SecurityException("Ruta de archivo no permitida: " + dest);
+        }
+
+        // Validar extensión del archivo
+        if (!ValidationUtils.hasValidExtension(dest, "pdf")) {
+            throw new ValidationException("Extensión de archivo no válida. Solo se permiten archivos PDF.");
+        }
+
+        // Sanitizar el nombre del archivo
+        String sanitizedDest = ValidationUtils.sanitizeFileName(dest);
+
+        PdfWriter writer = new PdfWriter(sanitizedDest);
         PdfDocument pdf = new PdfDocument(writer);
         Document document = new Document(pdf);
 
@@ -107,6 +135,6 @@ public class PdfGenerator {
                 .setBold());
 
         document.close();
-        System.out.println("Service Receipt PDF generated: " + dest);
+        System.out.println("Service Receipt PDF generated: " + sanitizedDest);
     }
 }

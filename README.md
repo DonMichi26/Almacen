@@ -168,6 +168,13 @@ Para cambiar de tema, haz clic en el botón "Modo Oscuro/Claro" en la barra supe
 - **Manejo de Excepciones**: Control adecuado de errores y mensajes amigables
 - **Documentación**: Comentarios claros en el código fuente
 
+## Mejoras Realizadas
+
+- **Gestión de excepciones mejorada**: Se han añadido clases de excepción personalizadas y un manejo más robusto de errores.
+- **Arquitectura mejorada**: Se ha introducido una capa de servicios para separar la lógica de negocio de la capa de presentación.
+- **Seguridad mejorada**: Se ha añadido validación de rutas de archivo para prevenir accesos no deseados.
+- **Validación de entradas**: Se han añadido controles adicionales para validar las entradas de usuario.
+
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Para cambios importantes, por favor abre un issue primero para discutir qué te gustaría cambiar.
