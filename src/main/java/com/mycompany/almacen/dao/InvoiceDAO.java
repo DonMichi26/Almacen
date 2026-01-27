@@ -2,7 +2,7 @@ package com.mycompany.almacen.dao;
 
 import com.mycompany.almacen.database.DatabaseManager;
 import com.mycompany.almacen.model.Invoice;
-import com.mycompany.almacen.model.InvoiceItem;
+
 
 import java.sql.*;
 import java.util.ArrayList;

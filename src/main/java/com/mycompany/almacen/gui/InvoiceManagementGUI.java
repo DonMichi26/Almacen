@@ -1,7 +1,7 @@
 package com.mycompany.almacen.gui;
 
-import com.mycompany.almacen.dao.InvoiceDAO;
-import com.mycompany.almacen.dao.InvoiceItemDAO;
+
+
 import com.mycompany.almacen.dao.ProductDAO;
 import com.mycompany.almacen.model.Invoice;
 import com.mycompany.almacen.model.InvoiceItem;

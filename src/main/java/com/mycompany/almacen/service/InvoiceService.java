@@ -6,7 +6,7 @@ import com.mycompany.almacen.dao.ProductDAO;
 import com.mycompany.almacen.exception.AlmacenException;
 import com.mycompany.almacen.model.Invoice;
 import com.mycompany.almacen.model.InvoiceItem;
-import com.mycompany.almacen.model.Product;
+
 
 import java.sql.SQLException;
 import java.util.List;

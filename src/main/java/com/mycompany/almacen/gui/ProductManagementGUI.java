@@ -2,14 +2,13 @@ package com.mycompany.almacen.gui;
 
 import com.mycompany.almacen.dao.BrandDAO;
 import com.mycompany.almacen.dao.CategoryDAO;
-import com.mycompany.almacen.dao.ProductDAO;
+
 import com.mycompany.almacen.model.Brand;
 import com.mycompany.almacen.model.Category;
 import com.mycompany.almacen.model.Product;
 import com.mycompany.almacen.service.ProductService;
 import com.mycompany.almacen.util.CsvManager;
 import com.mycompany.almacen.util.FileUtils;
-import com.mycompany.almacen.util.ValidationUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,10 +18,10 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.awt.event.ItemEvent;
+
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ProductManagementGUI extends JPanel {
 
@@ -38,10 +37,14 @@ public class ProductManagementGUI extends JPanel {
     private ModernButton addButton, updateButton, deleteButton, clearButton, searchButton, importButton, exportButton;
     private JTable productTable;
 
+    // Caches to avoid N+1 queries
+    private java.util.Map<Integer, String> categoryMap = new ConcurrentHashMap<>();
+    private java.util.Map<Integer, String> brandMap = new ConcurrentHashMap<>();
+
     // Define a minimalist color palette
     private static final Color BACKGROUND_COLOR = new Color(250, 250, 250); // Light Gray
-    private static final Color PRIMARY_COLOR = new Color(70, 130, 180);    // Steel Blue
-    private static final Color TEXT_COLOR = new Color(50, 50, 50);          // Dark Gray
+    private static final Color PRIMARY_COLOR = new Color(70, 130, 180); // Steel Blue
+    private static final Color TEXT_COLOR = new Color(50, 50, 50); // Dark Gray
     private static final Color TABLE_HEADER_COLOR = new Color(240, 240, 240); // Lighter Gray
 
     public ProductManagementGUI() {
@@ -49,9 +52,9 @@ public class ProductManagementGUI extends JPanel {
         categoryDAO = new CategoryDAO();
         brandDAO = new BrandDAO();
         initComponents();
-        loadProducts();
         loadCategories();
         loadBrands();
+        loadProducts(); // Load products last so maps are populated
     }
 
     private void initComponents() {
@@ -68,39 +71,68 @@ public class ProductManagementGUI extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Category
-        gbc.gridx = 0; gbc.gridy = 0; inputPanel.add(createLabel("Equipo:"), gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        inputPanel.add(createLabel("Equipo:"), gbc);
         categoryComboBox = new JComboBox<>();
-        gbc.gridx = 1; gbc.gridy = 0; inputPanel.add(categoryComboBox, gbc);
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        inputPanel.add(categoryComboBox, gbc);
 
         // Brand
-        gbc.gridx = 0; gbc.gridy = 1; inputPanel.add(createLabel("Marca:"), gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        inputPanel.add(createLabel("Marca:"), gbc);
         brandComboBox = new JComboBox<>();
-        gbc.gridx = 1; gbc.gridy = 1; inputPanel.add(brandComboBox, gbc);
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        inputPanel.add(brandComboBox, gbc);
 
         // Model
-        gbc.gridx = 0; gbc.gridy = 2; inputPanel.add(createLabel("Modelo:"), gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        inputPanel.add(createLabel("Modelo:"), gbc);
         modelField = createTextField();
-        gbc.gridx = 1; gbc.gridy = 2; inputPanel.add(modelField, gbc);
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        inputPanel.add(modelField, gbc);
 
         // Name
-        gbc.gridx = 0; gbc.gridy = 3; inputPanel.add(createLabel("Nombre:"), gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        inputPanel.add(createLabel("Nombre:"), gbc);
         nameField = createTextField();
-        gbc.gridx = 1; gbc.gridy = 3; gbc.weightx = 1.0; inputPanel.add(nameField, gbc);
+        gbc.gridx = 1;
+        gbc.gridy = 3;
+        gbc.weightx = 1.0;
+        inputPanel.add(nameField, gbc);
 
         // Description
-        gbc.gridx = 0; gbc.gridy = 4; inputPanel.add(createLabel("Descripción:"), gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        inputPanel.add(createLabel("Descripción:"), gbc);
         descriptionField = createTextField();
-        gbc.gridx = 1; gbc.gridy = 4; inputPanel.add(descriptionField, gbc);
+        gbc.gridx = 1;
+        gbc.gridy = 4;
+        inputPanel.add(descriptionField, gbc);
 
         // Price
-        gbc.gridx = 0; gbc.gridy = 5; inputPanel.add(createLabel("Precio:"), gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        inputPanel.add(createLabel("Precio:"), gbc);
         priceField = createTextField();
-        gbc.gridx = 1; gbc.gridy = 5; inputPanel.add(priceField, gbc);
+        gbc.gridx = 1;
+        gbc.gridy = 5;
+        inputPanel.add(priceField, gbc);
 
         // Stock
-        gbc.gridx = 0; gbc.gridy = 6; inputPanel.add(createLabel("Stock:"), gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 6;
+        inputPanel.add(createLabel("Stock:"), gbc);
         stockField = createTextField();
-        gbc.gridx = 1; gbc.gridy = 6; inputPanel.add(stockField, gbc);
+        gbc.gridx = 1;
+        gbc.gridy = 6;
+        inputPanel.add(stockField, gbc);
 
         // --- Button Panel ---
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
@@ -120,7 +152,7 @@ public class ProductManagementGUI extends JPanel {
         buttonPanel.add(exportButton);
 
         // --- Table Panel with improved aesthetics ---
-        String[] columnNames = {"Equipo", "Marca", "Modelo", "Nombre", "Descripción", "Precio", "Stock"};
+        String[] columnNames = { "Equipo", "Marca", "Modelo", "Nombre", "Descripción", "Precio", "Stock" };
         tableModel = new DefaultTableModel(columnNames, 0);
         productTable = new JTable(tableModel);
 
@@ -188,13 +220,19 @@ public class ProductManagementGUI extends JPanel {
         try {
             List<Category> categories = categoryDAO.getAllCategories();
             categoryComboBox.removeAllItems();
+            categoryMap.clear();
             for (Category category : categories) {
                 categoryComboBox.addItem(category);
+                categoryMap.put(category.getId(), category.getName());
+            }
+            if (!categoryMap.containsKey(1)) {
+                categoryMap.put(1, "General");
             }
             // Set renderer to show category name
             categoryComboBox.setRenderer(new DefaultListCellRenderer() {
                 @Override
-                public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                        boolean isSelected, boolean cellHasFocus) {
                     super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                     if (value instanceof Category) {
                         setText(((Category) value).getName());
@@ -211,16 +249,23 @@ public class ProductManagementGUI extends JPanel {
         try {
             List<Brand> brands = brandDAO.getAllBrands();
             brandComboBox.removeAllItems();
+            brandMap.clear();
             for (Brand brand : brands) {
                 brandComboBox.addItem(brand);
+                brandMap.put(brand.getId(), brand.getName());
             }
             // Add option to add new brand
             brandComboBox.addItem(new Brand(-1, "Agregar nuevo..."));
 
+            if (!brandMap.containsKey(1)) {
+                brandMap.put(1, "General");
+            }
+
             // Set renderer to show brand name
             brandComboBox.setRenderer(new DefaultListCellRenderer() {
                 @Override
-                public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                        boolean isSelected, boolean cellHasFocus) {
                     super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                     if (value instanceof Brand) {
                         setText(((Brand) value).getName());
@@ -247,9 +292,9 @@ public class ProductManagementGUI extends JPanel {
         List<Product> filteredProducts = new ArrayList<>();
 
         for (Product product : allProducts) {
-            // Obtener los nombres de categoría y marca para la comparación
-            String categoryName = getCategoryNameById(product.getCategoryId()).toLowerCase();
-            String brandName = getBrandNameById(product.getBrandId()).toLowerCase();
+            // Use maps instead of DB calls
+            String categoryName = categoryMap.getOrDefault(product.getCategoryId(), "General").toLowerCase();
+            String brandName = brandMap.getOrDefault(product.getBrandId(), "General").toLowerCase();
             String modelName = (product.getModel() != null ? product.getModel() : "").toLowerCase();
             String productName = product.getName().toLowerCase();
 
@@ -258,9 +303,9 @@ public class ProductManagementGUI extends JPanel {
 
             // Verificar si el término de búsqueda coincide con alguno de los campos
             if (categoryName.contains(lowerSearchTerm) ||
-                brandName.contains(lowerSearchTerm) ||
-                modelName.contains(lowerSearchTerm) ||
-                productName.contains(lowerSearchTerm)) {
+                    brandName.contains(lowerSearchTerm) ||
+                    modelName.contains(lowerSearchTerm) ||
+                    productName.contains(lowerSearchTerm)) {
                 filteredProducts.add(product);
             }
         }
@@ -272,9 +317,8 @@ public class ProductManagementGUI extends JPanel {
         JTextField textField = new JTextField();
         textField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         textField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            new EmptyBorder(5, 5, 5, 5)
-        ));
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
+                new EmptyBorder(5, 5, 5, 5)));
         return textField;
     }
 
@@ -285,31 +329,42 @@ public class ProductManagementGUI extends JPanel {
 
     private void loadProducts(String searchTerm) {
         tableModel.setRowCount(0);
-        try {
-            List<Product> products;
-            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
-                products = searchProducts(searchTerm.trim());
-            } else {
-                products = productService.getAllProducts();
+
+        SwingWorker<List<Product>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<Product> doInBackground() throws Exception {
+                if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                    return searchProducts(searchTerm.trim());
+                } else {
+                    return productService.getAllProducts();
+                }
             }
-            loadedProducts = products;
-            for (Product product : products) {
-                String categoryName = getCategoryNameById(product.getCategoryId());
-                String brandName = getBrandNameById(product.getBrandId());
-                tableModel.addRow(new Object[]{
-                    categoryName, // Equipo
-                    brandName, // Marca
-                    product.getModel() != null ? product.getModel() : "", // Modelo
-                    product.getName(), // Nombre
-                    product.getDescription(), // Descripción
-                    "S/ " + String.format("%.2f", product.getPrice()), // Precio
-                    product.getStock() // Stock
-                });
+
+            @Override
+            protected void done() {
+                try {
+                    List<Product> products = get();
+                    loadedProducts = products;
+                    for (Product product : products) {
+                        String categoryName = categoryMap.getOrDefault(product.getCategoryId(), "General");
+                        String brandName = brandMap.getOrDefault(product.getBrandId(), "General");
+                        tableModel.addRow(new Object[] {
+                                categoryName, // Equipo
+                                brandName, // Marca
+                                product.getModel() != null ? product.getModel() : "", // Modelo
+                                product.getName(), // Nombre
+                                product.getDescription(), // Descripción
+                                "S/ " + String.format("%.2f", product.getPrice()), // Precio
+                                product.getStock() // Stock
+                        });
+                    }
+                } catch (Exception e) {
+                    showError("Error al cargar productos: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
-        } catch (Exception e) {
-            showError("Error al cargar productos: " + e.getMessage());
-            e.printStackTrace();
-        }
+        };
+        worker.execute();
     }
 
     private void addProduct() {
@@ -320,7 +375,8 @@ public class ProductManagementGUI extends JPanel {
                 return;
             }
             String description = descriptionField.getText();
-            double price = Double.parseDouble(priceField.getText().replace("S/ ", ""));
+            String priceText = priceField.getText().replaceAll("[^0-9.]", "");
+            double price = Double.parseDouble(priceText.isEmpty() ? "0" : priceText);
             int stock = Integer.parseInt(stockField.getText());
             String model = modelField.getText().trim();
             Brand selectedBrand = (Brand) brandComboBox.getSelectedItem();
@@ -352,9 +408,9 @@ public class ProductManagementGUI extends JPanel {
             productService.addProduct(product);
             showMessage("Producto agregado exitosamente.");
             clearFields();
+            loadCategories(); // Reload categories first
+            loadBrands(); // Reload brands first
             loadProducts();
-            loadCategories(); // Reload categories in case a new one was added during import
-            loadBrands(); // Reload brands in case a new one was added
         } catch (NumberFormatException ex) {
             showError("Por favor, ingrese valores numéricos válidos para Precio y Stock.");
         } catch (Exception ex) {
@@ -377,7 +433,8 @@ public class ProductManagementGUI extends JPanel {
                 return;
             }
             String description = descriptionField.getText();
-            double price = Double.parseDouble(priceField.getText().replace("S/ ", ""));
+            String priceText = priceField.getText().replaceAll("[^0-9.]", "");
+            double price = Double.parseDouble(priceText.isEmpty() ? "0" : priceText);
             int stock = Integer.parseInt(stockField.getText());
             String model = modelField.getText().trim();
             Brand selectedBrand = (Brand) brandComboBox.getSelectedItem();
@@ -405,7 +462,8 @@ public class ProductManagementGUI extends JPanel {
 
             int categoryId = selectedCategory != null ? selectedCategory.getId() : 1; // Default to General
 
-            Product product = new Product(selectedProduct.getId(), name, description, price, stock, categoryId, brandId, model);
+            Product product = new Product(selectedProduct.getId(), name, description, price, stock, categoryId, brandId,
+                    model);
             productService.updateProduct(product);
             showMessage("Producto actualizado exitosamente.");
             clearFields();
@@ -427,10 +485,10 @@ public class ProductManagementGUI extends JPanel {
         try {
             Product selectedProduct = loadedProducts.get(selectedRow);
             int confirm = JOptionPane.showConfirmDialog(this,
-                "¿Está seguro de que desea eliminar el producto: " + selectedProduct.getName() + "?",
-                "Confirmar eliminación",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE);
+                    "¿Está seguro de que desea eliminar el producto: " + selectedProduct.getName() + "?",
+                    "Confirmar eliminación",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
 
             if (confirm == JOptionPane.YES_OPTION) {
                 productService.deleteProduct(selectedProduct.getId());
@@ -496,7 +554,8 @@ public class ProductManagementGUI extends JPanel {
         fileChooser.setAcceptAllFileFilterUsed(false);
         fileChooser.addChoosableFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Archivos CSV", "csv"));
 
-        // Establecer directorio predeterminado como la carpeta de documentos del usuario
+        // Establecer directorio predeterminado como la carpeta de documentos del
+        // usuario
         fileChooser.setCurrentDirectory(new java.io.File(FileUtils.getUserDocumentsFolder()));
 
         int result = fileChooser.showOpenDialog(this);
@@ -510,8 +569,8 @@ public class ProductManagementGUI extends JPanel {
                 }
 
                 showMessage("Importación completada. " + importedProducts.size() + " productos importados.");
+                loadCategories(); // Reload categories first
                 loadProducts();
-                loadCategories(); // Reload categories in case new ones were added
             } catch (IOException e) {
                 showError("Error de E/S al importar productos: " + e.getMessage());
                 e.printStackTrace();
@@ -532,9 +591,10 @@ public class ProductManagementGUI extends JPanel {
         // Set default filename
         java.util.Date now = new java.util.Date();
         String defaultFileName = "productos_exportados_" +
-            new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(now) + ".csv";
+                new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(now) + ".csv";
 
-        // Establecer directorio predeterminado como la carpeta de documentos del usuario
+        // Establecer directorio predeterminado como la carpeta de documentos del
+        // usuario
         fileChooser.setCurrentDirectory(new java.io.File(FileUtils.getUserDocumentsFolder()));
 
         fileChooser.setSelectedFile(new java.io.File(defaultFileName));
@@ -559,28 +619,6 @@ public class ProductManagementGUI extends JPanel {
                 showError("Error inesperado al exportar productos: " + e.getMessage());
                 e.printStackTrace();
             }
-        }
-    }
-
-    private String getCategoryNameById(int categoryId) {
-        try {
-            CategoryDAO categoryDAO = new CategoryDAO();
-            Category category = categoryDAO.getCategoryById(categoryId);
-            return category != null ? category.getName() : "General";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "General"; // Default fallback
-        }
-    }
-
-    private String getBrandNameById(int brandId) {
-        try {
-            BrandDAO brandDAO = new BrandDAO();
-            Brand brand = brandDAO.getBrandById(brandId);
-            return brand != null ? brand.getName() : "General";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "General"; // Default fallback
         }
     }
 

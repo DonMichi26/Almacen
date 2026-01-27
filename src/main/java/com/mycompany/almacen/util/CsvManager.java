@@ -2,7 +2,7 @@ package com.mycompany.almacen.util;
 
 import com.mycompany.almacen.dao.BrandDAO;
 import com.mycompany.almacen.dao.CategoryDAO;
-import com.mycompany.almacen.dao.ProductDAO;
+
 import com.mycompany.almacen.exception.SecurityException;
 import com.mycompany.almacen.exception.ValidationException;
 import com.mycompany.almacen.model.Brand;
@@ -120,7 +120,7 @@ public class CsvManager {
                         }
                     }
 
-                    Product product = new Product(id, name, description, price, stock, categoryId, brandId);
+                    Product product = new Product(id, name, description, price, stock, categoryId, brandId, model);
                     products.add(product);
                 }
             }

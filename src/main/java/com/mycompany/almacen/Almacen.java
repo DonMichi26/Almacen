@@ -13,9 +13,16 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+/**
+ * Clase principal de la aplicación Almacen.
+ * Esta clase extiende JFrame y sirve como el contenedor principal (ventana) de
+ * la aplicación.
+ * Gestiona la navegación entre los diferentes módulos (Productos, Facturas,
+ * Reportes)
+ * y la configuración global como el tema (Claro/Oscuro).
+ */
 public class Almacen extends JFrame {
 
-    // UI Style Constants
     private static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
     private static final Color TEXT_COLOR = new Color(50, 50, 50);
 
@@ -28,6 +35,14 @@ public class Almacen extends JFrame {
         initComponents();
     }
 
+    /**
+     * Inicializa y configura todos los componentes de la interfaz gráfica.
+     * Configura:
+     * 1. Propiedades de la ventana principal (título, tamaño, cierre).
+     * 2. Barra de menú superior con el botón de cambio de tema.
+     * 3. Barra lateral (SidebarPanel) para la navegación.
+     * 4. Panel de contenido central donde se muestran las vistas.
+     */
     private void initComponents() {
         setTitle("Sistema de Gestión de Almacén");
         setSize(1280, 800);
@@ -65,24 +80,30 @@ public class Almacen extends JFrame {
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
 
-        // Add action listener for sidebar navigation
+        // Agrega un escuchador de eventos para manejar la navegación desde la barra
+        // lateral.
+        // Este bloque de código determina qué vista mostrar basándose en el botón
+        // presionado.
         sidebar.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String command = e.getActionCommand();
+                String command = e.getActionCommand(); // Obtiene el comando del botón presionado
 
-                // Clear current content
+                // Elimina el contenido actual del panel central para mostrar el nuevo
                 contentPanel.removeAll();
 
-                switch(command) {
+                // Estructura de control para cambiar entre vistas
+                switch (command) {
                     case "PRODUCTS":
+                        // Muestra el panel de gestión de productos
                         contentPanel.add(productPanel, BorderLayout.CENTER);
                         break;
                     case "INVOICES":
+                        // Muestra el panel de gestión de facturas
                         contentPanel.add(invoicePanel, BorderLayout.CENTER);
                         break;
                     case "REPORTS":
-                        // TODO: Add reports panel
+                        // Muestra un panel provisional para reportes
                         JLabel reportsLabel = new JLabel("Panel de Reportes (Próximamente)", SwingConstants.CENTER);
                         reportsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
                         reportsLabel.setForeground(TEXT_COLOR);
@@ -90,16 +111,22 @@ public class Almacen extends JFrame {
                         break;
                 }
 
+                // Actualiza la interfaz gráfica para reflejar los cambios
                 contentPanel.revalidate();
                 contentPanel.repaint();
             }
         });
     }
 
+    /**
+     * Alterna entre el tema Claro y Oscuro de la aplicación.
+     * Utiliza ThemeManager para realizar el cambio y actualiza el texto del botón
+     * en la barra de menú.
+     */
     private void toggleTheme() {
         ThemeManager.toggleTheme();
 
-        // Update button text based on current theme
+        // Actualiza el texto del botón basado en el tema actual
         String currentLaf = UIManager.getLookAndFeel().getClass().getName();
         if (currentLaf.equals("com.formdev.flatlaf.FlatDarkLaf")) {
             themeToggleButton.setText("☀️ Modo Claro");
@@ -108,9 +135,15 @@ public class Almacen extends JFrame {
         }
     }
 
+    /**
+     * Método principal (Main) - Punto de entrada de la aplicación.
+     * 1. Configura el Look and Feel (apariencia) inicial usando FlatLaf.
+     * 2. Inicializa la base de datos y carga datos de prueba.
+     * 3. Inicia la interfaz gráfica en el hilo de despacho de eventos de Swing.
+     */
     public static void main(String[] args) {
         try {
-            // Set FlatLaf Light Look and Feel by default
+            // Establece FlatLaf Light como apariencia por defecto
             FlatLightLaf.setup();
             UIManager.put("Button.arc", 10);
             UIManager.put("Component.arc", 10);
