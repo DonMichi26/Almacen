@@ -89,6 +89,12 @@ public class DatabaseManager {
                 System.out.println("brand_id column added to products table.");
             }
 
+            // Check if model column exists in products table, if not add it
+            if (!columnExists(conn, "products", "model")) {
+                stmt.execute("ALTER TABLE products ADD COLUMN model TEXT");
+                System.out.println("model column added to products table.");
+            }
+
             // Create brands table if it doesn't exist
             if (!tableExists(conn, "brands")) {
                 StringBuilder sb = new StringBuilder();
@@ -117,7 +123,8 @@ public class DatabaseManager {
                 sb.append("price REAL NOT NULL,");
                 sb.append("stock INTEGER NOT NULL DEFAULT 0,");
                 sb.append("category_id INTEGER DEFAULT 1,");
-                sb.append("brand_id INTEGER DEFAULT 1)");
+                sb.append("brand_id INTEGER DEFAULT 1,");
+                sb.append("model TEXT)");
                 stmt.execute(sb.toString());
                 System.out.println("Products table created.");
             }

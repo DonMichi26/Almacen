@@ -23,6 +23,16 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Panel de Gestión de Productos.
+ * Esta clase representa la interfaz gráfica de usuario (GUI) para la
+ * administración del inventario.
+ * Permite realizar operaciones CRUD (Crear, Leer, Actualizar, Eliminar) sobre
+ * los productos,
+ * así como gestionar categorías y marcas. También incluye funcionalidades de
+ * búsqueda y
+ * exportación/importación de datos vía CSV.
+ */
 public class ProductManagementGUI extends JPanel {
 
     private ProductService productService;
@@ -47,6 +57,11 @@ public class ProductManagementGUI extends JPanel {
     private static final Color TEXT_COLOR = new Color(50, 50, 50); // Dark Gray
     private static final Color TABLE_HEADER_COLOR = new Color(240, 240, 240); // Lighter Gray
 
+    /**
+     * Constructor de la clase.
+     * Inicializa los servicios, DAOs y los componentes de la interfaz.
+     * También carga los datos iniciales de categorías, marcas y productos.
+     */
     public ProductManagementGUI() {
         productService = new ProductService();
         categoryDAO = new CategoryDAO();
@@ -54,9 +69,15 @@ public class ProductManagementGUI extends JPanel {
         initComponents();
         loadCategories();
         loadBrands();
-        loadProducts(); // Load products last so maps are populated
+        loadProducts(); // Carga los productos al final para asegurar que los mapas de categorías y
+                        // marcas estén listos
     }
 
+    /**
+     * Inicializa y organiza todos los componentes visuales del panel.
+     * Configura el diseño (Layout), campos de texto, botones, tablas y paneles de
+     * búsqueda.
+     */
     private void initComponents() {
         setBackground(BACKGROUND_COLOR);
         setLayout(new BorderLayout(10, 10));
@@ -195,20 +216,24 @@ public class ProductManagementGUI extends JPanel {
         add(topPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
 
-        // --- Action Listeners ---
+        // --- Action Listeners (Manejadores de Eventos) ---
+        // Configura las acciones que se ejecutan al interactuar con los botones y la
+        // tabla.
         final JTextField finalSearchField = searchFieldForPanel;
         searchButton.addActionListener(e -> {
             if (finalSearchField != null) {
-                loadProducts(finalSearchField.getText());
+                loadProducts(finalSearchField.getText()); // Busca productos según el texto ingresado
             }
         });
-        addButton.addActionListener(e -> addProduct());
-        updateButton.addActionListener(e -> updateProduct());
-        deleteButton.addActionListener(e -> deleteProduct());
-        clearButton.addActionListener(e -> clearFields());
-        importButton.addActionListener(e -> importProductsFromCsv());
-        exportButton.addActionListener(e -> exportProductsToCsv());
+        addButton.addActionListener(e -> addProduct()); // Acción para agregar
+        updateButton.addActionListener(e -> updateProduct()); // Acción para actualizar
+        deleteButton.addActionListener(e -> deleteProduct()); // Acción para eliminar
+        clearButton.addActionListener(e -> clearFields()); // Acción para limpiar formulario
+        importButton.addActionListener(e -> importProductsFromCsv()); // Acción importar CSV
+        exportButton.addActionListener(e -> exportProductsToCsv()); // Acción exportar CSV
 
+        // Listener para detectar la selección de una fila en la tabla y mostrar los
+        // detalles
         productTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && productTable.getSelectedRow() != -1) {
                 displayProductDetails();
@@ -216,6 +241,11 @@ public class ProductManagementGUI extends JPanel {
         });
     }
 
+    /**
+     * Carga las categorías desde la base de datos y las añade al ComboBox.
+     * También puebla un mapa (cache) para búsquedas rápidas de nombres de
+     * categorías por ID.
+     */
     private void loadCategories() {
         try {
             List<Category> categories = categoryDAO.getAllCategories();
@@ -245,6 +275,11 @@ public class ProductManagementGUI extends JPanel {
         }
     }
 
+    /**
+     * Carga las marcas desde la base de datos y las añade al ComboBox.
+     * Incluye una opción especial para agregar una nueva marca directamente desde
+     * la interfaz.
+     */
     private void loadBrands() {
         try {
             List<Brand> brands = brandDAO.getAllBrands();
@@ -286,7 +321,15 @@ public class ProductManagementGUI extends JPanel {
         return label;
     }
 
-    // Método para buscar productos en múltiples campos
+    // --- Métodos Auxiliares y Lógica de Negocio ---
+
+    /**
+     * Filtra la lista de productos basándose en un término de búsqueda.
+     * Busca coincidencias en categoría, marca, modelo y nombre del producto.
+     *
+     * @param searchTerm Término a buscar.
+     * @return Lista de productos filtrados.
+     */
     private List<Product> searchProducts(String searchTerm) throws Exception {
         List<Product> allProducts = productService.getAllProducts();
         List<Product> filteredProducts = new ArrayList<>();
@@ -322,11 +365,23 @@ public class ProductManagementGUI extends JPanel {
         return textField;
     }
 
-    // --- Data loading and actions (mostly unchanged, added error handling) ---
+    // --- Carga de Datos y Acciones ---
+
+    /**
+     * Carga todos los productos sin filtro.
+     */
     private void loadProducts() {
         loadProducts(null);
     }
 
+    /**
+     * Carga los productos en la tabla, opcionalmente filtrados por un término de
+     * búsqueda.
+     * Utiliza un SwingWorker para realizar la operación en segundo plano y no
+     * congelar la UI.
+     * 
+     * @param searchTerm Término para filtrar, o null para cargar todos.
+     */
     private void loadProducts(String searchTerm) {
         tableModel.setRowCount(0);
 
@@ -367,6 +422,11 @@ public class ProductManagementGUI extends JPanel {
         worker.execute();
     }
 
+    /**
+     * Recoge los datos del formulario y agrega un nuevo producto.
+     * Realiza validaciones de entrada y maneja la lógica de creación de nuevas
+     * marcas si es necesario.
+     */
     private void addProduct() {
         try {
             String name = nameField.getText();
@@ -419,6 +479,11 @@ public class ProductManagementGUI extends JPanel {
         }
     }
 
+    /**
+     * Actualiza la información del producto seleccionado.
+     * Valida que se haya seleccionado un producto y que los datos ingresados sean
+     * correctos.
+     */
     private void updateProduct() {
         int selectedRow = productTable.getSelectedRow();
         if (selectedRow < 0) {
@@ -476,6 +541,9 @@ public class ProductManagementGUI extends JPanel {
         }
     }
 
+    /**
+     * Elimina el producto seleccionado tras pedir confirmación al usuario.
+     */
     private void deleteProduct() {
         int selectedRow = productTable.getSelectedRow();
         if (selectedRow < 0) {
@@ -502,6 +570,9 @@ public class ProductManagementGUI extends JPanel {
         }
     }
 
+    /**
+     * Limpia todos los campos del formulario de entrada y deselecciona la tabla.
+     */
     private void clearFields() {
         nameField.setText("");
         descriptionField.setText("");
@@ -517,6 +588,11 @@ public class ProductManagementGUI extends JPanel {
         productTable.clearSelection();
     }
 
+    /**
+     * Muestra los detalles del producto seleccionado en la tabla dentro del
+     * formulario de entrada.
+     * Sincroniza los ComboBoxes de Categoría y Marca con los datos del producto.
+     */
     private void displayProductDetails() {
         int selectedRow = productTable.getSelectedRow();
         if (selectedRow >= 0) {
@@ -547,6 +623,11 @@ public class ProductManagementGUI extends JPanel {
         }
     }
 
+    /**
+     * Abre un selector de archivos para importar productos desde un archivo CSV.
+     * Utiliza CsvManager para procesar el archivo y luego añade los productos al
+     * sistema.
+     */
     private void importProductsFromCsv() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Seleccionar archivo CSV para importar productos");
@@ -581,6 +662,11 @@ public class ProductManagementGUI extends JPanel {
         }
     }
 
+    /**
+     * Abre un selector de archivos para exportar la lista actual de productos a un
+     * archivo CSV.
+     * Genera un nombre de archivo por defecto con la fecha y hora actual.
+     */
     private void exportProductsToCsv() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Guardar archivo CSV de productos");

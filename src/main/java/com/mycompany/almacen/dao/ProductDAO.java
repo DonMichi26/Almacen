@@ -10,7 +10,7 @@ import java.util.List;
 public class ProductDAO {
 
     public void addProduct(Product product) throws SQLException {
-        String sql = "INSERT INTO products(name, description, price, stock, category_id, brand_id) VALUES(?,?,?,?,?,?)";
+        String sql = "INSERT INTO products(name, description, price, stock, category_id, brand_id, model) VALUES(?,?,?,?,?,?,?)";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, product.getName());
@@ -19,12 +19,13 @@ public class ProductDAO {
             pstmt.setInt(4, product.getStock());
             pstmt.setInt(5, product.getCategoryId()); // Add category_id
             pstmt.setInt(6, product.getBrandId());
+            pstmt.setString(7, product.getModel());
             pstmt.executeUpdate();
         }
     }
 
     public Product getProductById(int id) throws SQLException {
-        String sql = "SELECT id, name, description, price, stock, category_id, brand_id FROM products WHERE id = ?";
+        String sql = "SELECT id, name, description, price, stock, category_id, brand_id, model FROM products WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, id);
@@ -37,7 +38,8 @@ public class ProductDAO {
                     rs.getDouble("price"),
                     rs.getInt("stock"),
                     rs.getInt("category_id"), // Add category_id
-                    rs.getInt("brand_id")
+                    rs.getInt("brand_id"),
+                    rs.getString("model")
                 );
             }
         }
@@ -46,7 +48,7 @@ public class ProductDAO {
 
     public List<Product> getAllProducts() throws SQLException {
         List<Product> products = new ArrayList<>();
-        String sql = "SELECT id, name, description, price, stock, category_id, brand_id FROM products";
+        String sql = "SELECT id, name, description, price, stock, category_id, brand_id, model FROM products";
         try (Connection conn = DatabaseManager.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -58,7 +60,8 @@ public class ProductDAO {
                     rs.getDouble("price"),
                     rs.getInt("stock"),
                     rs.getInt("category_id"), // Add category_id
-                    rs.getInt("brand_id")
+                    rs.getInt("brand_id"),
+                    rs.getString("model")
                 ));
             }
         }
@@ -66,7 +69,7 @@ public class ProductDAO {
     }
 
     public void updateProduct(Product product) throws SQLException {
-        String sql = "UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category_id = ?, brand_id = ? WHERE id = ?";
+        String sql = "UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category_id = ?, brand_id = ?, model = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, product.getName());
@@ -75,7 +78,8 @@ public class ProductDAO {
             pstmt.setInt(4, product.getStock());
             pstmt.setInt(5, product.getCategoryId()); // Add category_id
             pstmt.setInt(6, product.getBrandId());
-            pstmt.setInt(7, product.getId());
+            pstmt.setString(7, product.getModel());
+            pstmt.setInt(8, product.getId());
             pstmt.executeUpdate();
         }
     }
@@ -91,7 +95,7 @@ public class ProductDAO {
 
     public List<Product> searchProductsByName(String name) throws SQLException {
         List<Product> products = new ArrayList<>();
-        String sql = "SELECT id, name, description, price, stock, category_id, brand_id FROM products WHERE name LIKE ?";
+        String sql = "SELECT id, name, description, price, stock, category_id, brand_id, model FROM products WHERE name LIKE ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, "%" + name + "%");
@@ -104,7 +108,8 @@ public class ProductDAO {
                     rs.getDouble("price"),
                     rs.getInt("stock"),
                     rs.getInt("category_id"), // Add category_id
-                    rs.getInt("brand_id")
+                    rs.getInt("brand_id"),
+                    rs.getString("model")
                 ));
             }
         }
