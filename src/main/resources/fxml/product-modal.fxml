@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<!-- Modal para Agregar/Editar Producto -->
+<BorderPane xmlns="http://javafx.com/javafx/21" 
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:id="productModalRoot"
+            fx:controller="com.mycompany.almacen.controller.ProductModalController"
+            styleClass="modal-content"
+            prefWidth="600" prefHeight="650">
+
+    <!-- Header -->
+    <top>
+        <VBox spacing="4">
+            <Label fx:id="modalTitle" text="Nuevo Producto" styleClass="modal-title" />
+            <Label text="Completa la información del producto" styleClass="modal-subtitle" />
+        </VBox>
+    </top>
+
+    <!-- Formulario -->
+    <center>
+        <ScrollPane fitToWidth="true">
+            <VBox spacing="16">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20" />
+                </padding>
+
+                <!-- Fila 1: Nombre -->
+                <VBox spacing="6">
+                    <Label text="Nombre *" styleClass="kpi-title" />
+                    <TextField fx:id="nameField" promptText="Ej: iPhone 15 Pro" />
+                    <Label fx:id="nameError" styleClass="error" style="-fx-text-fill: #ef4444; -fx-font-size: 12px;" visible="false" managed="false" />
+                </VBox>
+
+                <!-- Fila 2: Modelo -->
+                <VBox spacing="6">
+                    <Label text="Modelo" styleClass="kpi-title" />
+                    <TextField fx:id="modelField" promptText="Ej: A2848" />
+                </VBox>
+
+                <!-- Fila 3: Categoría y Marca -->
+                <HBox spacing="16">
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Categoría *" styleClass="kpi-title" />
+                        <ComboBox fx:id="categoryComboBox" promptText="Seleccionar" />
+                    </VBox>
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Marca *" styleClass="kpi-title" />
+                        <HBox spacing="8">
+                            <ComboBox fx:id="brandComboBox" promptText="Seleccionar" HBox.hgrow="ALWAYS" />
+                            <Button text="+" fx:id="addBrandButton" styleClass="button" prefWidth="40" />
+                        </HBox>
+                    </VBox>
+                </HBox>
+
+                <!-- Fila 4: Descripción -->
+                <VBox spacing="6">
+                    <Label text="Descripción" styleClass="kpi-title" />
+                    <TextArea fx:id="descriptionField" promptText="Describe el producto..." prefRowCount="3" />
+                </VBox>
+
+                <!-- Fila 5: Precio y Stock -->
+                <HBox spacing="16">
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Precio *" styleClass="kpi-title" />
+                        <TextField fx:id="priceField" promptText="0.00" />
+                        <Label fx:id="priceError" styleClass="error" style="-fx-text-fill: #ef4444; -fx-font-size: 12px;" visible="false" managed="false" />
+                    </VBox>
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Stock *" styleClass="kpi-title" />
+                        <TextField fx:id="stockField" promptText="0" />
+                        <Label fx:id="stockError" styleClass="error" style="-fx-text-fill: #ef4444; -fx-font-size: 12px;" visible="false" managed="false" />
+                    </VBox>
+                </HBox>
+
+                <!-- Badge de estado de stock -->
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Estado:" styleClass="kpi-title" />
+                    <StackPane fx:id="stockBadgeContainer" />
+                </HBox>
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <!-- Footer con Botones -->
+    <bottom>
+        <HBox spacing="12" alignment="CENTER_RIGHT">
+            <Button text="Cancelar" styleClass="button, ghost" fx:id="cancelButton" />
+            <Button text="Guardar" styleClass="button, success" fx:id="saveButton" />
+        </HBox>
+    </bottom>
+
+</BorderPane>

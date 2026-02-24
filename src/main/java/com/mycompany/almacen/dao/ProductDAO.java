@@ -117,11 +117,12 @@ public class ProductDAO {
     }
 
     public void updateProductStock(int productId, int quantityChange) throws SQLException {
-        String sql = "UPDATE products SET stock = stock + ? WHERE id = ?";
+        String sql = "UPDATE products SET stock = CASE WHEN stock + ? < 0 THEN 0 ELSE stock + ? END WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, quantityChange);
-            pstmt.setInt(2, productId);
+            pstmt.setInt(2, quantityChange);
+            pstmt.setInt(3, productId);
             pstmt.executeUpdate();
         }
     }

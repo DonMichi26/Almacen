@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.text.Text?>
+
+<!-- Dashboard con KPIs -->
+<VBox xmlns="http://javafx.com/javafx/21" 
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:id="dashboardRoot"
+      fx:controller="com.mycompany.almacen.controller.DashboardController"
+      styleClass="main-container"
+      spacing="20">
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4">
+            <Label text="Dashboard" styleClass="kpi-value" />
+            <Label text="Resumen del inventario" styleClass="kpi-title" />
+        </VBox>
+        <Region HBox.hgrow="ALWAYS" />
+        <Button text="🔄 Actualizar" styleClass="button, ghost" fx:id="refreshButton" />
+    </HBox>
+
+    <!-- KPI Cards -->
+    <HBox spacing="20">
+        <!-- Valor de Inventario -->
+        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="16">
+                <StackPane styleClass="kpi-icon, primary">
+                    <Label text="📦" style="-fx-font-size: 24px;" />
+                </StackPane>
+                <VBox HBox.hgrow="ALWAYS">
+                    <Label text="Valor de Inventario" styleClass="kpi-title" />
+                    <Label fx:id="inventoryValueLabel" text="\$0.00" styleClass="kpi-value" />
+                    <Label fx:id="inventoryValueChange" text="+0% vs mes anterior" styleClass="kpi-change" />
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <!-- Ventas del Día -->
+        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="16">
+                <StackPane styleClass="kpi-icon, success">
+                    <Label text="💰" style="-fx-font-size: 24px;" />
+                </StackPane>
+                <VBox HBox.hgrow="ALWAYS">
+                    <Label text="Ventas del Día" styleClass="kpi-title" />
+                    <Label fx:id="dailySalesLabel" text="\$0.00" styleClass="kpi-value" />
+                    <Label fx:id="dailySalesChange" text="+0 ventas" styleClass="kpi-change" />
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <!-- Productos con Stock Bajo -->
+        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="16">
+                <StackPane styleClass="kpi-icon, warning">
+                    <Label text="⚠️" style="-fx-font-size: 24px;" />
+                </StackPane>
+                <VBox HBox.hgrow="ALWAYS">
+                    <Label text="Stock Bajo" styleClass="kpi-title" />
+                    <Label fx:id="lowStockLabel" text="0 productos" styleClass="kpi-value" />
+                    <Label fx:id="lowStockChange" text="Requieren atención" styleClass="kpi-change negative" />
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <!-- Total Productos -->
+        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="16">
+                <StackPane styleClass="kpi-icon, danger">
+                    <Label text="🏷️" style="-fx-font-size: 24px;" />
+                </StackPane>
+                <VBox HBox.hgrow="ALWAYS">
+                    <Label text="Total Productos" styleClass="kpi-title" />
+                    <Label fx:id="totalProductsLabel" text="0" styleClass="kpi-value" />
+                    <Label fx:id="totalProductsChange" text="En catálogo" styleClass="kpi-change" />
+                </VBox>
+            </HBox>
+        </VBox>
+    </HBox>
+
+</VBox>

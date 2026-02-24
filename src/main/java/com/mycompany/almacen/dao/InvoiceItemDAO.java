@@ -10,9 +10,14 @@ import java.util.List;
 public class InvoiceItemDAO {
 
     public void addInvoiceItem(InvoiceItem item) throws SQLException {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            addInvoiceItem(conn, item);
+        }
+    }
+
+    public void addInvoiceItem(Connection conn, InvoiceItem item) throws SQLException {
         String sql = "INSERT INTO invoice_items(invoice_id, product_id, quantity, unit_price) VALUES(?,?,?,?)";
-        try (Connection conn = DatabaseManager.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, item.getInvoiceId());
             pstmt.setInt(2, item.getProductId());
             pstmt.setInt(3, item.getQuantity());

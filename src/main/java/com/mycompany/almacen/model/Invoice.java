@@ -34,6 +34,10 @@ public class Invoice {
         this(-1, invoiceDate, customerName, totalAmount, InvoiceType.SERVICE, description);
     }
 
+    // Constructor vacío para frameworks y reflexión
+    public Invoice() {
+    }
+
     // Getters and Setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
@@ -49,6 +53,11 @@ public class Invoice {
     public void setInvoiceType(InvoiceType invoiceType) { this.invoiceType = invoiceType; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    
+    // Setter para email del cliente (campo adicional)
+    private String customerEmail;
+    public String getCustomerEmail() { return customerEmail; }
+    public void setCustomerEmail(String customerEmail) { this.customerEmail = customerEmail; }
 
     @Override
     public String toString() {

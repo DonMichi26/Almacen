@@ -15,14 +15,19 @@ public class InvoiceDAO {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public int addInvoice(Invoice invoice) throws SQLException {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return addInvoice(conn, invoice);
+        }
+    }
+
+    public int addInvoice(Connection conn, Invoice invoice) throws SQLException {
         String sql = "INSERT INTO invoices(invoice_date, customer_name, total_amount, invoice_type, description) VALUES(?,?,?,?,?)";
         int invoiceId = -1;
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, DATE_FORMAT.format(invoice.getInvoiceDate()));
             pstmt.setString(2, invoice.getCustomerName());
             pstmt.setDouble(3, invoice.getTotalAmount());
-            pstmt.setString(4, invoice.getInvoiceType().toString());
+            pstmt.setString(4, invoice.getInvoiceType() != null ? invoice.getInvoiceType().toString() : "SALE");
             pstmt.setString(5, invoice.getDescription());
             pstmt.executeUpdate();
 

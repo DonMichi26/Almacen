@@ -22,6 +22,10 @@ public class InvoiceItem {
         this(-1, invoiceId, productId, productName, quantity, unitPrice); // -1 indicates no ID yet
     }
 
+    // Constructor vacío para frameworks
+    public InvoiceItem() {
+    }
+
     // Getters and Setters
     public int getId() {
         return id;

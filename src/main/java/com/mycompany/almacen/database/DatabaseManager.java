@@ -15,10 +15,25 @@ public class DatabaseManager {
     private static final String DATABASE_URL = "jdbc:sqlite:almacen.db";
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(DATABASE_URL);
+        Connection conn = DriverManager.getConnection(DATABASE_URL);
+        conn.setAutoCommit(true);
+        return conn;
+    }
+
+    public static void initializeDatabase() {
+        try (Connection conn = getConnection()) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("PRAGMA journal_mode=WAL");
+                stmt.execute("PRAGMA busy_timeout=5000");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error initializing database: " + e.getMessage());
+        }
     }
 
     public static void createTables() {
+        initializeDatabase();
+        
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
@@ -60,39 +75,6 @@ public class DatabaseManager {
                 if (rs.next() && rs.getInt(1) == 0) {
                     stmt.execute("INSERT INTO categories (name, description) VALUES ('Computadoras', 'Laptops y computadoras personales')");
                 }
-            }
-
-            // Check if category_id column exists in products table, if not add it
-            if (!columnExists(conn, "products", "category_id")) {
-                stmt.execute("ALTER TABLE products ADD COLUMN category_id INTEGER DEFAULT 1");
-                System.out.println("category_id column added to products table.");
-            } else {
-                // Update existing products to have a valid category_id if they have NULL
-                stmt.execute("UPDATE products SET category_id = 1 WHERE category_id IS NULL OR category_id = ''");
-            }
-
-            // Check if invoice_type column exists in invoices table, if not add it
-            if (!columnExists(conn, "invoices", "invoice_type")) {
-                stmt.execute("ALTER TABLE invoices ADD COLUMN invoice_type TEXT NOT NULL DEFAULT 'SALE'");
-                System.out.println("invoice_type column added to invoices table.");
-            }
-
-            // Check if description column exists in invoices table, if not add it
-            if (!columnExists(conn, "invoices", "description")) {
-                stmt.execute("ALTER TABLE invoices ADD COLUMN description TEXT");
-                System.out.println("description column added to invoices table.");
-            }
-
-            // Check if brand_id column exists in products table, if not add it
-            if (!columnExists(conn, "products", "brand_id")) {
-                stmt.execute("ALTER TABLE products ADD COLUMN brand_id INTEGER DEFAULT 1");
-                System.out.println("brand_id column added to products table.");
-            }
-
-            // Check if model column exists in products table, if not add it
-            if (!columnExists(conn, "products", "model")) {
-                stmt.execute("ALTER TABLE products ADD COLUMN model TEXT");
-                System.out.println("model column added to products table.");
             }
 
             // Create brands table if it doesn't exist
@@ -156,6 +138,39 @@ public class DatabaseManager {
                 System.out.println("Invoice items table created.");
             }
 
+            // Check if category_id column exists in products table, if not add it
+            if (!columnExists(conn, "products", "category_id")) {
+                stmt.execute("ALTER TABLE products ADD COLUMN category_id INTEGER DEFAULT 1");
+                System.out.println("category_id column added to products table.");
+            } else {
+                // Update existing products to have a valid category_id if they have NULL
+                stmt.execute("UPDATE products SET category_id = 1 WHERE category_id IS NULL");
+            }
+
+            // Check if invoice_type column exists in invoices table, if not add it
+            if (!columnExists(conn, "invoices", "invoice_type")) {
+                stmt.execute("ALTER TABLE invoices ADD COLUMN invoice_type TEXT NOT NULL DEFAULT 'SALE'");
+                System.out.println("invoice_type column added to invoices table.");
+            }
+
+            // Check if description column exists in invoices table, if not add it
+            if (!columnExists(conn, "invoices", "description")) {
+                stmt.execute("ALTER TABLE invoices ADD COLUMN description TEXT");
+                System.out.println("description column added to invoices table.");
+            }
+
+            // Check if brand_id column exists in products table, if not add it
+            if (!columnExists(conn, "products", "brand_id")) {
+                stmt.execute("ALTER TABLE products ADD COLUMN brand_id INTEGER DEFAULT 1");
+                System.out.println("brand_id column added to products table.");
+            }
+
+            // Check if model column exists in products table, if not add it
+            if (!columnExists(conn, "products", "model")) {
+                stmt.execute("ALTER TABLE products ADD COLUMN model TEXT");
+                System.out.println("model column added to products table.");
+            }
+
             // Insert default category if none exists
             insertDefaultCategory(stmt);
 
@@ -188,33 +203,46 @@ public class DatabaseManager {
     }
 
     public static void seedDatabaseWithSampleData() {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM products");
             if (rs.next() && rs.getInt(1) == 0) {
                 System.out.println("Seeding database with sample data...");
-                ProductDAO productDAO = new ProductDAO();
-                BrandDAO brandDAO = new BrandDAO();
+                
+                conn.setAutoCommit(false);
+                try {
+                    ProductDAO productDAO = new ProductDAO();
+                    BrandDAO brandDAO = new BrandDAO();
 
-                // Get brand IDs
-                Brand asusBrand = brandDAO.getBrandByName("Apple");
-                Brand logitechBrand = brandDAO.getBrandByName("Samsung");
-                Brand redragonBrand = brandDAO.getBrandByName("Honor");
-                Brand jblBrand = brandDAO.getBrandByName("Xiaomi");
-                Brand genericBrand = brandDAO.getBrandByName("General");
+                    Brand asusBrand = brandDAO.getBrandByName("Apple");
+                    Brand logitechBrand = brandDAO.getBrandByName("Samsung");
+                    Brand redragonBrand = brandDAO.getBrandByName("Honor");
+                    Brand jblBrand = brandDAO.getBrandByName("Xiaomi");
+                    Brand genericBrand = brandDAO.getBrandByName("General");
 
-                // If brands don't exist, use General (ID 1)
-                int asusId = asusBrand != null ? asusBrand.getId() : 1;
-                int logitechId = logitechBrand != null ? logitechBrand.getId() : 1;
-                int redragonId = redragonBrand != null ? redragonBrand.getId() : 1;
-                int jblId = jblBrand != null ? jblBrand.getId() : 1;
-                int genericId = genericBrand != null ? genericBrand.getId() : 1;
+                    int asusId = asusBrand != null ? asusBrand.getId() : 1;
+                    int logitechId = logitechBrand != null ? logitechBrand.getId() : 1;
+                    int redragonId = redragonBrand != null ? redragonBrand.getId() : 1;
+                    int jblId = jblBrand != null ? jblBrand.getId() : 1;
+                    int genericId = genericBrand != null ? genericBrand.getId() : 1;
 
-                productDAO.addProduct(new Product(0, "iPhone 15 Pro", "Smartphone con chip A17 Pro y cámara de 48MP", 4500.00, 15, 1, asusId)); // General category
-                productDAO.addProduct(new Product(0, "Samsung Galaxy S24", "Smartphone con IA integrada y pantalla Dynamic AMOLED", 3800.00, 20, 1, logitechId)); // General category
-                productDAO.addProduct(new Product(0, "Honor Magic 6 Pro", "Smartphone con cámara de 50MP y carga rápida de 66W", 2800.00, 25, 1, redragonId)); // General category
-                productDAO.addProduct(new Product(0, "Xiaomi 14 Ultra", "Smartphone con cámara Leica y cuerpo de titanio", 3200.00, 18, 1, jblId)); // General category
-                productDAO.addProduct(new Product(0, "Funda iPhone 15 Pro", "Funda protectora para iPhone 15 Pro", 80.00, 100, 1, genericId)); // General category
-                System.out.println("Sample data seeded.");
+                    productDAO.addProduct(new Product(0, "iPhone 15 Pro", "Smartphone con chip A17 Pro y cámara de 48MP", 4500.00, 15, 1, asusId));
+                    productDAO.addProduct(new Product(0, "Samsung Galaxy S24", "Smartphone con IA integrada y pantalla Dynamic AMOLED", 3800.00, 20, 1, logitechId));
+                    productDAO.addProduct(new Product(0, "Honor Magic 6 Pro", "Smartphone con cámara de 50MP y carga rápida de 66W", 2800.00, 25, 1, redragonId));
+                    productDAO.addProduct(new Product(0, "Xiaomi 14 Ultra", "Smartphone con cámara Leica y cuerpo de titanio", 3200.00, 18, 1, jblId));
+                    productDAO.addProduct(new Product(0, "Funda iPhone 15 Pro", "Funda protectora para iPhone 15 Pro", 80.00, 100, 1, genericId));
+                    
+                    conn.commit();
+                    System.out.println("Sample data seeded.");
+                } catch (Exception e) {
+                    conn.rollback();
+                    throw e;
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error seeding database: " + e.getMessage());

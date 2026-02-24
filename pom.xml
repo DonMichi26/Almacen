@@ -20,7 +20,7 @@
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itext7-core</artifactId>
-            <version>7.1.18</version>
+            <version>8.0.2</version>
             <type>pom</type>
         </dependency>
         <dependency>
@@ -85,6 +85,10 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>com.mycompany.almacen.AlmacenFX</mainClass>
+                            <options>
+                                <option>--add-opens</option>
+                                <option>javafx.controls/com.sun.javafx.scene.control=ALL-UNNAMED</option>
+                            </options>
                         </configuration>
                     </execution>
                 </executions>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.collections.FXCollections?>
+
+<!-- Catálogo de Productos con Tabla -->
+<VBox xmlns="http://javafx.com/javafx/21" 
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:id="catalogRoot"
+      fx:controller="com.mycompany.almacen.controller.ProductCatalogController"
+      styleClass="main-container"
+      spacing="16">
+
+    <!-- Header con Búsqueda -->
+    <VBox spacing="12">
+        <HBox alignment="CENTER_LEFT" spacing="16">
+            <VBox>
+                <Label text="Catálogo de Productos" styleClass="kpi-value" />
+                <Label text="Gestiona tu inventario" styleClass="kpi-title" />
+            </VBox>
+            <Region HBox.hgrow="ALWAYS" />
+            <Button text="➕ Nuevo Producto" styleClass="button" fx:id="newProductButton" />
+        </HBox>
+
+        <!-- Barra de Búsqueda -->
+        <HBox styleClass="search-container" spacing="8">
+            <Label text="🔍" style="-fx-font-size: 16px;" />
+            <TextField fx:id="searchField" promptText="Buscar productos..." 
+                       styleClass="search-field" HBox.hgrow="ALWAYS" />
+            <Button text="✕" styleClass="icon-button" fx:id="clearSearchButton" />
+        </HBox>
+    </VBox>
+
+    <!-- Tabla de Productos -->
+    <TableView fx:id="productsTable" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="colName" text="Nombre" prefWidth="200" />
+            <TableColumn fx:id="colModel" text="Modelo" prefWidth="120" />
+            <TableColumn fx:id="colCategory" text="Categoría" prefWidth="120" />
+            <TableColumn fx:id="colBrand" text="Marca" prefWidth="100" />
+            <TableColumn fx:id="colPrice" text="Precio" prefWidth="100" />
+            <TableColumn fx:id="colStock" text="Stock" prefWidth="80" />
+            <TableColumn fx:id="colActions" text="Acciones" prefWidth="150" />
+        </columns>
+    </TableView>
+
+</VBox>

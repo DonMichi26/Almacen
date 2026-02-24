@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<!-- Modal de Venta Rápida -->
+<BorderPane xmlns="http://javafx.com/javafx/21" 
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:id="quickSaleRoot"
+            fx:controller="com.mycompany.almacen.controller.QuickSaleModalController"
+            styleClass="modal-content"
+            prefWidth="900" prefHeight="600">
+
+    <!-- Header -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="16">
+            <VBox>
+                <Label text="🛒 Venta Rápida" styleClass="modal-title" />
+                <Label text="Selecciona productos y procesa la venta" styleClass="modal-subtitle" />
+            </VBox>
+            <Region HBox.hgrow="ALWAYS" />
+            <Button text="✕" styleClass="icon-button" fx:id="closeButton" />
+        </HBox>
+    </top>
+
+    <!-- Contenido Central -->
+    <center>
+        <HBox spacing="20">
+            <!-- Lista de Productos -->
+            <VBox spacing="12" HBox.hgrow="ALWAYS">
+                <!-- Búsqueda -->
+                <HBox styleClass="search-container" spacing="8">
+                    <Label text="🔍" style="-fx-font-size: 14px;" />
+                    <TextField fx:id="productSearchField" promptText="Buscar producto..." 
+                               styleClass="search-field" HBox.hgrow="ALWAYS" />
+                </HBox>
+
+                <!-- Tabla de Productos -->
+                <TableView fx:id="productTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colProductName" text="Producto" prefWidth="200" />
+                        <TableColumn fx:id="colProductPrice" text="Precio" prefWidth="100" />
+                        <TableColumn fx:id="colProductStock" text="Stock" prefWidth="80" />
+                        <TableColumn fx:id="colProductAction" text="Acción" prefWidth="120" />
+                    </columns>
+                </TableView>
+            </VBox>
+
+            <!-- Carrito Lateral -->
+            <VBox styleClass="cart-panel" prefWidth="280">
+                <Label text="Carrito" styleClass="kpi-value" />
+                
+                <!-- Items del Carrito -->
+                <ScrollPane fx:id="cartScrollPane" fitToWidth="true" VBox.vgrow="ALWAYS">
+                    <VBox fx:id="cartItems" spacing="8" />
+                </ScrollPane>
+
+                <!-- Información del Cliente -->
+                <TitledPane text="Cliente" expanded="false">
+                    <VBox spacing="8">
+                        <TextField fx:id="customerNameField" promptText="Nombre del cliente" />
+                        <TextField fx:id="customerEmailField" promptText="Email (opcional)" />
+                    </VBox>
+                </TitledPane>
+
+                <!-- Total -->
+                <VBox styleClass="cart-total">
+                    <HBox>
+                        <Label text="Subtotal:" styleClass="cart-total-label" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="subtotalLabel" text="\$0.00" style="-fx-font-size: 16px; -fx-font-weight: 600;" />
+                    </HBox>
+                    <HBox>
+                        <Label text="Impuesto (16%):" styleClass="cart-total-label" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="taxLabel" text="\$0.00" style="-fx-font-size: 16px; -fx-font-weight: 600;" />
+                    </HBox>
+                    <Separator styleClass="separator" />
+                    <HBox>
+                        <Label text="Total:" styleClass="cart-total-label" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="totalLabel" text="\$0.00" styleClass="cart-total-value" />
+                    </HBox>
+                </VBox>
+
+                <!-- Botones de Acción -->
+                <HBox spacing="8">
+                    <Button text="Cancelar" styleClass="button, ghost" fx:id="cancelButton" HBox.hgrow="ALWAYS" />
+                    <Button text="Procesar" styleClass="button, success" fx:id="processButton" HBox.hgrow="ALWAYS" />
+                </HBox>
+            </VBox>
+        </HBox>
+    </center>
+
+</BorderPane>

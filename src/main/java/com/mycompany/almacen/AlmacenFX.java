@@ -1,535 +1,342 @@
 package com.mycompany.almacen;
 
+import com.mycompany.almacen.controller.*;
+import com.mycompany.almacen.database.DatabaseManager;
+import com.mycompany.almacen.service.*;
+import java.io.IOException;
 import javafx.application.Application;
-import javafx.geometry.Insets;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.util.Callback;
-import javafx.scene.control.cell.PropertyValueFactory;
-import com.mycompany.almacen.model.Product;
-import com.mycompany.almacen.service.ProductService;
-import com.mycompany.almacen.dao.BrandDAO;
-import com.mycompany.almacen.dao.CategoryDAO;
-import com.mycompany.almacen.model.Brand;
-import com.mycompany.almacen.model.Category;
 
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Optional;
-
+/**
+ * Clase principal de la aplicación JavaFX con UI moderna.
+ * Integra Dashboard, Catálogo de Productos y Venta Rápida.
+ */
 public class AlmacenFX extends Application {
 
+    // Servicios
     private ProductService productService;
-    private CategoryDAO categoryDAO;
-    private BrandDAO brandDAO;
-    private ObservableList<Product> productData;
-    private TableView<Product> tableView;
-    private TextField nameField, descriptionField, priceField, stockField, modelField, searchField;
-    private ComboBox<Category> categoryComboBox;
-    private ComboBox<Brand> brandComboBox;
+    private CategoryService categoryService;
+    private BrandService brandService;
+    private InvoiceService invoiceService;
+
+    // Controladores
+    private DashboardController dashboardController;
+    private ProductCatalogController catalogController;
+
+    // UI Principal
+    private BorderPane mainLayout;
+    private TabPane tabPane;
 
     @Override
     public void start(Stage primaryStage) {
-        // Inicializar servicios
-        productService = new ProductService();
-        categoryDAO = new CategoryDAO();
-        brandDAO = new BrandDAO();
-
-        // Crear la interfaz de usuario
-        createUI(primaryStage);
-        
-        // Cargar datos iniciales
-        loadData();
+        initializeServices();
+        createMainLayout(primaryStage);
     }
 
-    private void createUI(Stage primaryStage) {
-        // Configurar la escena principal
-        VBox root = new VBox(10);
-        root.setPadding(new Insets(10));
+    /**
+     * Inicializa servicios con inyección de dependencias.
+     */
+    private void initializeServices() {
+        DatabaseManager.createTables();
+        DatabaseManager.seedDatabaseWithSampleData();
 
-        // Aplicar estilo CSS personalizado
-        root.setStyle("-fx-background-color: #f5f5f5;");
+        productService = new ProductService();
+        categoryService = new CategoryService();
+        brandService = new BrandService();
+        invoiceService = new InvoiceService();
+    }
 
-        // Crear campos de entrada
-        GridPane inputGrid = new GridPane();
-        inputGrid.setHgap(10);
-        inputGrid.setVgap(10);
-        inputGrid.setPadding(new Insets(10));
-        inputGrid.setStyle("-fx-border-color: #d0d0d0; -fx-border-width: 1px; -fx-border-radius: 5px; -fx-background-radius: 5px; -fx-background-color: white;");
+    /**
+     * Crea el layout principal con navegación lateral.
+     */
+    private void createMainLayout(Stage primaryStage) {
+        mainLayout = new BorderPane();
+        mainLayout.getStyleClass().add("main-container");
 
-        // Campos de entrada
-        nameField = new TextField();
-        nameField.setPromptText("Nombre del producto");
-        nameField.setStyle("-fx-font-size: 14px; -fx-padding: 5px;");
-        descriptionField = new TextField();
-        descriptionField.setPromptText("Descripción");
-        descriptionField.setStyle("-fx-font-size: 14px; -fx-padding: 5px;");
-        priceField = new TextField();
-        priceField.setPromptText("Precio");
-        priceField.setStyle("-fx-font-size: 14px; -fx-padding: 5px;");
-        stockField = new TextField();
-        stockField.setPromptText("Stock");
-        stockField.setStyle("-fx-font-size: 14px; -fx-padding: 5px;");
-        modelField = new TextField();
-        modelField.setPromptText("Modelo");
-        modelField.setStyle("-fx-font-size: 14px; -fx-padding: 5px;");
+        // Sidebar de navegación
+        VBox sidebar = createSidebar();
+        mainLayout.setLeft(sidebar);
 
-        // Combos
-        categoryComboBox = new ComboBox<>();
-        categoryComboBox.setStyle("-fx-font-size: 14px; -fx-padding: 5px; -fx-border-radius: 5px; -fx-background-radius: 5px;");
-        brandComboBox = new ComboBox<>();
-        brandComboBox.setStyle("-fx-font-size: 14px; -fx-padding: 5px; -fx-border-radius: 5px; -fx-background-radius: 5px;");
+        // Área de contenido (TabPane)
+        tabPane = createTabPane();
+        mainLayout.setCenter(tabPane);
 
-        // Añadir opción para crear nueva marca al inicio
-        brandComboBox.getItems().add(new Brand(-1, "Agregar nueva marca..."));
+        // Cargar contenido de las tabs
+        loadDashboard();
+        loadProductCatalog();
+        loadInvoices();
 
-        // Cargar categorías y marcas
-        loadCategories();
-        loadBrands();
+        // Crear escena
+        Scene scene = new Scene(mainLayout, 1400, 900);
+        scene
+            .getStylesheets()
+            .add(
+                getClass()
+                    .getResource("/styles/modern-theme.css")
+                    .toExternalForm()
+            );
 
-        // Listener para manejar la selección de la opción especial
-        brandComboBox.setOnAction(event -> {
-            Brand selectedBrand = brandComboBox.getValue();
-            if (selectedBrand != null && selectedBrand.getId() == -1) {
-                // Mostrar diálogo para ingresar nueva marca
-                TextInputDialog dialog = new TextInputDialog();
-                dialog.setTitle("Nueva Marca");
-                dialog.setHeaderText("Crear nueva marca");
-                dialog.setContentText("Nombre de la nueva marca:");
-
-                Optional<String> result = dialog.showAndWait();
-                if (result.isPresent() && !result.get().trim().isEmpty()) {
-                    String newBrandName = result.get().trim();
-
-                    try {
-                        // Crear la nueva marca
-                        Brand newBrand = new Brand(0, newBrandName);
-                        brandDAO.addBrand(newBrand);
-
-                        // Obtener la marca recién creada con su ID asignado
-                        Brand createdBrand = brandDAO.getBrandByName(newBrandName);
-
-                        // Recargar las marcas para incluir la nueva
-                        loadBrands();
-
-                        // Seleccionar la nueva marca si se creó exitosamente
-                        if (createdBrand != null) {
-                            brandComboBox.getSelectionModel().select(createdBrand);
-                        }
-                    } catch (SQLException e) {
-                        showAlert("Error", "Error al crear la nueva marca: " + e.getMessage());
-                    }
-                } else {
-                    // Si el usuario canceló o no ingresó un nombre, volver a la selección anterior
-                    // Por simplicidad, dejaremos la opción seleccionada, el usuario puede elegir otra
-                }
-            }
-        });
-
-        // Añadir campos al grid
-        int row = 0;
-        inputGrid.add(new Label("Categoría:"), 0, row);
-        inputGrid.add(categoryComboBox, 1, row++);
-        inputGrid.add(new Label("Marca:"), 0, row);
-        inputGrid.add(brandComboBox, 1, row++);
-        inputGrid.add(new Label("Modelo:"), 0, row);
-        inputGrid.add(modelField, 1, row++);
-        inputGrid.add(new Label("Nombre:"), 0, row);
-        inputGrid.add(nameField, 1, row++);
-        inputGrid.add(new Label("Descripción:"), 0, row);
-        inputGrid.add(descriptionField, 1, row++);
-        inputGrid.add(new Label("Precio:"), 0, row);
-        inputGrid.add(priceField, 1, row++);
-        inputGrid.add(new Label("Stock:"), 0, row);
-        inputGrid.add(stockField, 1, row++);
-
-        // Botones
-        HBox buttonBox = new HBox(10);
-        Button addButton = new Button("Agregar");
-        Button updateButton = new Button("Actualizar");
-        Button deleteButton = new Button("Eliminar");
-        Button clearButton = new Button("Limpiar");
-
-        // Estilo de botones
-        String buttonStyle = "-fx-font-size: 14px; -fx-padding: 8px 15px; -fx-background-color: #4a90e2; -fx-text-fill: white; -fx-border-radius: 4px; -fx-background-radius: 4px;";
-        addButton.setStyle(buttonStyle);
-        updateButton.setStyle(buttonStyle.replace("#4a90e2", "#5cb85c"));
-        deleteButton.setStyle(buttonStyle.replace("#4a90e2", "#d9534f"));
-        clearButton.setStyle(buttonStyle.replace("#4a90e2", "#f0ad4e"));
-
-        addButton.setOnAction(e -> addProduct());
-        updateButton.setOnAction(e -> updateProduct());
-        deleteButton.setOnAction(e -> deleteProduct());
-        clearButton.setOnAction(e -> clearFields());
-
-        buttonBox.getChildren().addAll(addButton, updateButton, deleteButton, clearButton);
-
-        // Campo de búsqueda
-        HBox searchBox = new HBox(10);
-        searchField = new TextField();
-        searchField.setPromptText("Buscar productos...");
-        searchField.setStyle("-fx-font-size: 14px; -fx-padding: 5px;");
-        Button searchButton = new Button("Buscar");
-        searchButton.setStyle(buttonStyle.replace("#4a90e2", "#5bc0de"));
-        searchButton.setOnAction(e -> searchProducts());
-
-        searchBox.getChildren().addAll(new Label("Buscar:"), searchField, searchButton);
-
-        // Tabla de productos
-        tableView = createProductTable();
-
-        // Añadir componentes al layout principal
-        root.getChildren().addAll(
-            new Label("Sistema de Gestión de Almacén") {{
-                setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-alignment: center; -fx-padding: 10px;");
-            }},
-            inputGrid,
-            buttonBox,
-            searchBox,
-            tableView
-        );
-
-        // Hacer que la tabla ocupe el espacio disponible
-        VBox.setVgrow(tableView, Priority.ALWAYS);
-
-        Scene scene = new Scene(root, 1200, 800); // Aumentar el tamaño inicial
-        // Intentar aplicar un CSS externo si existe
-        try {
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-        } catch (Exception e) {
-            // Si no existe el archivo CSS, continuamos sin él
-            System.out.println("No se encontró el archivo CSS externo, usando estilos básicos");
-        }
-
-        // Permitir redimensionamiento
+        // Configurar stage
         primaryStage.setTitle("Sistema de Gestión de Almacén");
         primaryStage.setScene(scene);
-        primaryStage.setMinWidth(1000); // Establecer tamaño mínimo
-        primaryStage.setMinHeight(700);
+        primaryStage.setMinWidth(1200);
+        primaryStage.setMinHeight(800);
         primaryStage.show();
     }
 
-    private TableView<Product> createProductTable() {
-        // Crear columnas
-        TableColumn<Product, String> categoryCol = new TableColumn<>("Categoría");
-        categoryCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(
-                getCategoryName(data.getValue().getCategoryId())
-            )
+    /**
+     * Crea la barra lateral de navegación.
+     */
+    private VBox createSidebar() {
+        VBox sidebar = new VBox(8);
+        sidebar.getStyleClass().add("sidebar");
+        sidebar.setPrefWidth(240);
+
+        // Logo / Título
+        Label title = new Label("📦 Almacén");
+        title.setStyle(
+            "-fx-font-size: 20px; -fx-font-weight: 700; -fx-text-fill: -primary;"
+        );
+        title.setStyle("-fx-padding: 0 0 20px 0;");
+
+        // Botones de navegación
+        Button dashboardBtn = createNavButton("📊 Dashboard", () ->
+            tabPane.getSelectionModel().select(0)
+        );
+        Button productsBtn = createNavButton("🏷️ Productos", () ->
+            tabPane.getSelectionModel().select(1)
+        );
+        Button salesBtn = createNavButton("💰 Ventas", this::openQuickSale);
+        Button invoicesBtn = createNavButton("📄 Facturas", () ->
+            tabPane.getSelectionModel().select(2)
         );
 
-        TableColumn<Product, String> brandCol = new TableColumn<>("Marca");
-        brandCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(
-                getBrandName(data.getValue().getBrandId())
-            )
+        separator = new Separator();
+        separator.getStyleClass().add("separator");
+
+        // Botón de configuración
+        Button settingsBtn = createNavButton("⚙️ Configuración", () ->
+            showSettings()
         );
 
-        TableColumn<Product, String> modelCol = new TableColumn<>("Modelo");
-        modelCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(data.getValue().getModel())
-        );
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        TableColumn<Product, String> nameCol = new TableColumn<>("Nombre");
-        nameCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(data.getValue().getName())
-        );
+        // Botón de ayuda
+        Button helpBtn = createNavButton("❓ Ayuda", this::showHelp);
 
-        TableColumn<Product, String> descCol = new TableColumn<>("Descripción");
-        descCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(data.getValue().getDescription())
-        );
+        sidebar
+            .getChildren()
+            .addAll(
+                title,
+                dashboardBtn,
+                productsBtn,
+                salesBtn,
+                invoicesBtn,
+                separator,
+                settingsBtn,
+                spacer,
+                helpBtn
+            );
 
-        TableColumn<Product, Number> priceCol = new TableColumn<>("Precio");
-        priceCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleDoubleProperty(data.getValue().getPrice())
-        );
-
-        TableColumn<Product, Number> stockCol = new TableColumn<>("Stock");
-        stockCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleIntegerProperty(data.getValue().getStock())
-        );
-
-        // Crear tabla
-        TableView<Product> table = new TableView<>();
-        table.getColumns().addAll(
-            categoryCol, brandCol, modelCol, nameCol, descCol, priceCol, stockCol
-        );
-
-        // Configurar la tabla
-        table.setItems(getProductData());
-        table.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 1) {
-                displaySelectedProduct();
-            }
-        });
-
-        // Estilo de la tabla
-        table.setStyle("-fx-font-size: 13px;");
-        table.setPrefHeight(400);
-
-        return table;
+        return sidebar;
     }
 
-    private String getCategoryName(int categoryId) {
+    private Separator separator;
+
+    /**
+     * Crea un botón de navegación.
+     */
+    private Button createNavButton(String text, Runnable action) {
+        Button button = new Button(text);
+        button.getStyleClass().addAll("button", "ghost");
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setOnAction(e -> action.run());
+        return button;
+    }
+
+    /**
+     * Crea el TabPane para el contenido principal.
+     */
+    private TabPane createTabPane() {
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("content-area");
+        tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        return tabPane;
+    }
+
+    /**
+     * Carga el Dashboard en una pestaña.
+     */
+    private void loadDashboard() {
         try {
-            Category category = categoryDAO.getCategoryById(categoryId);
-            return category != null ? category.getName() : "General";
-        } catch (SQLException e) {
-            return "General";
+            FXMLLoader loader = new FXMLLoader(
+                getClass().getResource("/fxml/dashboard.fxml")
+            );
+            VBox dashboard = loader.load();
+
+            dashboardController = loader.getController();
+            dashboardController.initialize(productService, invoiceService);
+
+            Tab tab = new Tab("Dashboard", dashboard);
+            tab.setClosable(false);
+            tabPane.getTabs().add(tab);
+        } catch (IOException e) {
+            showError("Error al cargar Dashboard: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    private String getBrandName(int brandId) {
+    /**
+     * Carga el Catálogo de Productos en una pestaña.
+     */
+    private void loadProductCatalog() {
         try {
-            Brand brand = brandDAO.getBrandById(brandId);
-            return brand != null ? brand.getName() : "General";
-        } catch (SQLException e) {
-            return "General";
+            FXMLLoader loader = new FXMLLoader(
+                getClass().getResource("/fxml/product-catalog.fxml")
+            );
+            VBox catalog = loader.load();
+
+            catalogController = loader.getController();
+            catalogController.initialize(
+                productService,
+                categoryService,
+                brandService
+            );
+
+            Tab tab = new Tab("Productos", catalog);
+            tab.setClosable(false);
+            tabPane.getTabs().add(tab);
+        } catch (IOException e) {
+            showError("Error al cargar Catálogo: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    private ObservableList<Product> getProductData() {
-        if (productData == null) {
-            productData = FXCollections.observableArrayList();
-        }
-        return productData;
-    }
-
-    private void loadData() {
+    /**
+     * Abre el modal de Venta Rápida.
+     */
+    private void openQuickSale() {
         try {
-            List<Product> products = productService.getAllProducts();
-            getProductData().setAll(products);
-        } catch (Exception e) {
-            showAlert("Error", "Error al cargar productos: " + e.getMessage());
-        }
-    }
+            FXMLLoader loader = new FXMLLoader(
+                getClass().getResource("/fxml/quick-sale-modal.fxml")
+            );
+            BorderPane modalContent = loader.load();
 
-    private void loadCategories() {
-        try {
-            List<Category> categories = categoryDAO.getAllCategories();
-            categoryComboBox.getItems().setAll(categories);
-            // Establecer un renderer personalizado para mejorar la apariencia
-            categoryComboBox.setCellFactory(lv -> new ListCell<Category>() {
-                @Override
-                protected void updateItem(Category item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (item != null) {
-                        setText(item.getName());
-                    } else {
-                        setText(null);
-                    }
+            QuickSaleModalController controller = loader.getController();
+            controller.initialize(productService, invoiceService, () -> {
+                // Callback al cerrar: refrescar dashboard y catálogo
+                refreshDashboard();
+                if (catalogController != null) {
+                    catalogController.loadProducts();
                 }
             });
-            // Establecer un string converter para mostrar el nombre de la categoría seleccionada
-            categoryComboBox.setConverter(new javafx.util.StringConverter<Category>() {
-                @Override
-                public String toString(Category category) {
-                    return category != null ? category.getName() : "";
-                }
 
-                @Override
-                public Category fromString(String string) {
-                    return null; // No es necesario para este uso
-                }
-            });
-        } catch (SQLException e) {
-            showAlert("Error", "Error al cargar categorías: " + e.getMessage());
+            // Crear diálogo modal
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.initOwner(mainLayout.getScene().getWindow());
+            dialog.setTitle("Venta Rápida");
+
+            Scene scene = new Scene(modalContent);
+            scene
+                .getStylesheets()
+                .add(
+                    getClass()
+                        .getResource("/styles/modern-theme.css")
+                        .toExternalForm()
+                );
+            dialog.setScene(scene);
+
+            dialog.showAndWait();
+        } catch (IOException e) {
+            showError("Error al abrir Venta Rápida: " + e.getMessage());
         }
     }
 
-    private void loadBrands() {
-        try {
-            // Limpiar items excepto la opción de agregar nueva marca
-            brandComboBox.getItems().clear();
-            brandComboBox.getItems().add(new Brand(-1, "Agregar nueva marca..."));
+    /**
+     * Carga la pestaña de Facturas (placeholder).
+     */
+    private void loadInvoices() {
+        VBox content = new VBox(20);
+        content.getStyleClass().add("main-container");
+        content.setPadding(new javafx.geometry.Insets(20));
 
-            List<Brand> brands = brandDAO.getAllBrands();
-            brandComboBox.getItems().addAll(brands);
+        Label title = new Label("📄 Gestión de Facturas");
+        title.setStyle("-fx-font-size: 24px; -fx-font-weight: 700;");
 
-            // Establecer un renderer personalizado para mejorar la apariencia
-            brandComboBox.setCellFactory(lv -> new ListCell<Brand>() {
-                @Override
-                protected void updateItem(Brand item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (item != null) {
-                        setText(item.getName());
-                    } else {
-                        setText(null);
-                    }
-                }
-            });
-            // Establecer un string converter para mostrar el nombre de la marca seleccionada
-            brandComboBox.setConverter(new javafx.util.StringConverter<Brand>() {
-                @Override
-                public String toString(Brand brand) {
-                    return brand != null ? brand.getName() : "";
-                }
+        Label description = new Label("Módulo de facturación en desarrollo...");
+        description.setStyle(
+            "-fx-font-size: 14px; -fx-text-fill: -text-secondary;"
+        );
 
-                @Override
-                public Brand fromString(String string) {
-                    return null; // No es necesario para este uso
-                }
-            });
-        } catch (SQLException e) {
-            showAlert("Error", "Error al cargar marcas: " + e.getMessage());
+        content.getChildren().addAll(title, description);
+
+        Tab tab = new Tab("Facturas", content);
+        tab.setClosable(false);
+        tabPane.getTabs().add(tab);
+    }
+
+    /**
+     * Refresca los datos del Dashboard.
+     */
+    private void refreshDashboard() {
+        if (dashboardController != null) {
+            dashboardController.loadDashboardData();
         }
     }
 
-    private void addProduct() {
-        try {
-            String name = nameField.getText();
-            if (name == null || name.trim().isEmpty()) {
-                showAlert("Advertencia", "El nombre del producto no puede estar vacío.");
-                return;
-            }
-
-            String description = descriptionField.getText();
-            double price = Double.parseDouble(priceField.getText());
-            int stock = Integer.parseInt(stockField.getText());
-            String model = modelField.getText();
-
-            Category selectedCategory = categoryComboBox.getValue();
-            Brand selectedBrand = brandComboBox.getValue();
-
-            int categoryId = selectedCategory != null ? selectedCategory.getId() : 1;
-            int brandId = selectedBrand != null && selectedBrand.getId() != -1 ? selectedBrand.getId() : 1; // Usar General si no hay selección válida
-
-            Product product = new Product(0, name, description, price, stock, categoryId, brandId, model);
-            productService.addProduct(product);
-
-            showAlert("Éxito", "Producto agregado exitosamente.");
-            clearFields();
-            loadData();
-        } catch (NumberFormatException e) {
-            showAlert("Error", "Por favor, ingrese valores numéricos válidos para Precio y Stock.");
-        } catch (Exception e) {
-            showAlert("Error", "Error al agregar producto: " + e.getMessage());
-        }
-    }
-
-    private void updateProduct() {
-        Product selectedProduct = tableView.getSelectionModel().getSelectedItem();
-        if (selectedProduct == null) {
-            showAlert("Advertencia", "Por favor, seleccione un producto para actualizar.");
-            return;
-        }
-
-        try {
-            String name = nameField.getText();
-            if (name == null || name.trim().isEmpty()) {
-                showAlert("Advertencia", "El nombre del producto no puede estar vacío.");
-                return;
-            }
-
-            String description = descriptionField.getText();
-            double price = Double.parseDouble(priceField.getText());
-            int stock = Integer.parseInt(stockField.getText());
-            String model = modelField.getText();
-
-            Category selectedCategory = categoryComboBox.getValue();
-            Brand selectedBrand = brandComboBox.getValue();
-
-            int categoryId = selectedCategory != null ? selectedCategory.getId() : 1;
-            int brandId = selectedBrand != null && selectedBrand.getId() != -1 ? selectedBrand.getId() : 1; // Usar General si no hay selección válida
-
-            Product product = new Product(selectedProduct.getId(), name, description, price, stock, categoryId, brandId, model);
-            productService.updateProduct(product);
-
-            showAlert("Éxito", "Producto actualizado exitosamente.");
-            clearFields();
-            loadData();
-        } catch (NumberFormatException e) {
-            showAlert("Error", "Por favor, ingrese valores numéricos válidos para Precio y Stock.");
-        } catch (Exception e) {
-            showAlert("Error", "Error al actualizar producto: " + e.getMessage());
-        }
-    }
-
-    private void deleteProduct() {
-        Product selectedProduct = tableView.getSelectionModel().getSelectedItem();
-        if (selectedProduct == null) {
-            showAlert("Advertencia", "Por favor, seleccione un producto para eliminar.");
-            return;
-        }
-
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirmar eliminación");
-        alert.setHeaderText("¿Está seguro de que desea eliminar el producto?");
-        alert.setContentText("Producto: " + selectedProduct.getName());
-
-        if (alert.showAndWait().get() == ButtonType.OK) {
-            try {
-                productService.deleteProduct(selectedProduct.getId());
-                showAlert("Éxito", "Producto eliminado exitosamente.");
-                clearFields();
-                loadData();
-            } catch (Exception e) {
-                showAlert("Error", "Error al eliminar producto: " + e.getMessage());
-            }
-        }
-    }
-
-    private void clearFields() {
-        nameField.clear();
-        descriptionField.clear();
-        priceField.clear();
-        stockField.clear();
-        modelField.clear();
-        categoryComboBox.setValue(null);
-        brandComboBox.setValue(null);
-        tableView.getSelectionModel().clearSelection();
-    }
-
-    private void displaySelectedProduct() {
-        Product selectedProduct = tableView.getSelectionModel().getSelectedItem();
-        if (selectedProduct != null) {
-            nameField.setText(selectedProduct.getName());
-            descriptionField.setText(selectedProduct.getDescription());
-            priceField.setText(String.valueOf(selectedProduct.getPrice()));
-            stockField.setText(String.valueOf(selectedProduct.getStock()));
-            modelField.setText(selectedProduct.getModel());
-
-            // Seleccionar categoría y marca correspondientes
-            try {
-                Category category = categoryDAO.getCategoryById(selectedProduct.getCategoryId());
-                categoryComboBox.setValue(category);
-                
-                Brand brand = brandDAO.getBrandById(selectedProduct.getBrandId());
-                brandComboBox.setValue(brand);
-            } catch (SQLException e) {
-                showAlert("Error", "Error al cargar datos del producto: " + e.getMessage());
-            }
-        }
-    }
-
-    private void searchProducts() {
-        String searchTerm = searchField.getText();
-        try {
-            List<Product> products;
-            if (searchTerm == null || searchTerm.trim().isEmpty()) {
-                products = productService.getAllProducts();
-            } else {
-                // Implementar búsqueda aquí
-                products = productService.getAllProducts().stream()
-                    .filter(p -> p.getName().toLowerCase().contains(searchTerm.toLowerCase()) ||
-                                 p.getDescription().toLowerCase().contains(searchTerm.toLowerCase()) ||
-                                 (p.getModel() != null && p.getModel().toLowerCase().contains(searchTerm.toLowerCase())))
-                    .collect(java.util.stream.Collectors.toList());
-            }
-            getProductData().setAll(products);
-        } catch (Exception e) {
-            showAlert("Error", "Error al buscar productos: " + e.getMessage());
-        }
-    }
-
-    private void showAlert(String title, String message) {
+    /**
+     * Muestra la configuración (placeholder).
+     */
+    private void showSettings() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
+        alert.setTitle("Configuración");
+        alert.setHeaderText("Configuración del Sistema");
+        alert.setContentText("Módulo de configuración en desarrollo...");
+        alert.showAndWait();
+    }
+
+    /**
+     * Muestra la ayuda (placeholder).
+     */
+    private void showHelp() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Ayuda");
+        alert.setHeaderText("Sistema de Gestión de Almacén");
+
+        String helpText =
+            "Atajos de teclado:\n" +
+            "• Ctrl+D: Ir al Dashboard\n" +
+            "• Ctrl+P: Ir a Productos\n" +
+            "• Ctrl+V: Nueva Venta Rápida\n" +
+            "• F5: Actualizar datos\n\n" +
+            "Funcionalidades:\n" +
+            "• Dashboard: Métricas en tiempo real\n" +
+            "• Productos: Catálogo con búsqueda inteligente\n" +
+            "• Ventas: Proceso rápido de facturación\n";
+
+        TextArea textArea = new TextArea(helpText);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        textArea.setPrefWidth(400);
+        textArea.setPrefHeight(300);
+
+        alert.getDialogPane().setContent(textArea);
+        alert.showAndWait();
+    }
+
+    /**
+     * Muestra un mensaje de error.
+     */
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
